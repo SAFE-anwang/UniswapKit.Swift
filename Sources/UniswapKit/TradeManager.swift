@@ -261,3 +261,42 @@ extension TradeManager {
     }
 
 }
+
+extension TradeManager {
+
+    func transactionLiquidityData(tradeData: TradeData) throws -> TransactionData {
+        return try buildLiquidityData(tradeData: tradeData)
+    }
+    
+    private func buildLiquidityData(tradeData: TradeData) throws -> TransactionData {
+        let trade = tradeData.trade
+
+        let tokenIn = trade.tokenAmountIn.token
+        let tokenOut = trade.tokenAmountOut.token
+
+        let path = trade.route.path.map {
+            $0.address
+        }
+        let to = tradeData.options.recipient ?? address
+        let deadline = BigUInt(Date().timeIntervalSince1970 + tradeData.options.ttl)
+        
+        let slippage: BigUInt = (tokenIn.address.hex == "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c" || tokenOut.address.hex == "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c") ? 25 : 5
+        
+        let amountAMin = trade.tokenAmountIn.rawAmount.multiplied(by: slippage)
+        let amountBMin = trade.tokenAmountOut.rawAmount.multiplied(by: slippage)
+
+        let method = try buildMethodForLiquidityOut(tokenIn: tokenIn, tokenOut: tokenOut, to: to, deadline: deadline, tradeData: tradeData, trade: trade, amountAMin: amountAMin, amountBMin: amountBMin)
+
+
+        return TransactionData(
+            to: routerAddress,
+            value: trade.tokenAmountIn.rawAmount,
+            input: method.encodedABI()
+        )
+    }
+    
+    private func buildMethodForLiquidityOut(tokenIn: Token, tokenOut: Token, to: Address, deadline: BigUInt, tradeData: TradeData, trade: Trade, amountAMin: BigUInt, amountBMin: BigUInt) throws -> ContractMethod {
+
+        return AddLiquidityMethod(tokenA: tokenIn.address, tokenB: tokenOut.address, amountADesired: trade.tokenAmountIn.rawAmount, amountBDesired: trade.tokenAmountOut.rawAmount, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
+    }
+}
