@@ -90,6 +90,10 @@ extension PancakeSwapKit {
     public func transactionData(tradeData: TradeData) throws -> TransactionData {
         try tradeManager.transactionData(tradeData: tradeData)
     }
+    
+    public func transactionLiquidityData(tradeData: TradeData) throws -> TransactionData {
+        try tradeManager.transactionLiquidityData(tradeData: tradeData)
+    }
 
 }
 
