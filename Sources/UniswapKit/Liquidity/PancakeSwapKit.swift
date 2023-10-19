@@ -112,7 +112,7 @@ extension PancakeSwapKit {
     }
 
     public static func addDecorators(to evmKit: EvmKit.Kit) {
-        evmKit.add(methodDecorator: SwapMethodDecorator(contractMethodFactories: SwapContractMethodFactories.shared))
+        evmKit.add(methodDecorator: LiquidityMethodDecorator(contractMethodFactories: PancakeSwapV2ContractMethodFactories.shared))
         evmKit.add(transactionDecorator: SwapTransactionDecorator())
     }
 
