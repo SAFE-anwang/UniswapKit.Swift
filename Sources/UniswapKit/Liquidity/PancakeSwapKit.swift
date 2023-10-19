@@ -111,10 +111,10 @@ extension PancakeSwapKit {
         return swapKit
     }
 
-//    public static func addDecorators(to evmKit: EvmKit.Kit) {
-//        evmKit.add(methodDecorator: SwapMethodDecorator(contractMethodFactories: SwapContractMethodFactories.shared))
-//        evmKit.add(transactionDecorator: SwapTransactionDecorator())
-//    }
+    public static func addDecorators(to evmKit: EvmKit.Kit) {
+        evmKit.add(methodDecorator: SwapMethodDecorator(contractMethodFactories: SwapContractMethodFactories.shared))
+        evmKit.add(transactionDecorator: SwapTransactionDecorator())
+    }
 
 }
 
