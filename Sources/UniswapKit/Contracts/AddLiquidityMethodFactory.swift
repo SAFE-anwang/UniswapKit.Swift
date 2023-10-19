@@ -13,8 +13,8 @@ class AddLiquidityMethodFactory: IContractMethodFactory {
               let amountBDesired = parsedArguments[3] as? BigUInt,
               let amountAMin = parsedArguments[4] as? BigUInt,
               let amountBMin = parsedArguments[5] as? BigUInt,
-              let to = parsedArguments[2] as? Address,
-              let deadline = parsedArguments[3] as? BigUInt else {
+              let to = parsedArguments[6] as? Address,
+              let deadline = parsedArguments[7] as? BigUInt else {
             throw ContractMethodFactories.DecodeError.invalidABI
         }
 
