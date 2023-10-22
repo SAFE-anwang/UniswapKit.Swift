@@ -170,7 +170,20 @@ extension SwapTransactionDecorator: ITransactionDecorator {
                     recipient: method.to == from ? nil : method.to,
                     deadline: method.deadline
             )
+        case let method as AddLiquidityMethod:
+ 
+            let totalAmount = totalTokenAmount(userAddress: method.to, tokenAddress: method.tokenA, eventInstances: eventInstances, collectIncomingAmounts: true)
+            let amountIn: SwapDecoration.Amount = totalAmount != 0 ? .exact(value: totalAmount) : .extremum(value: method.amountADesired)
 
+            return SwapDecoration(
+                    contractAddress: to,
+                    amountIn: amountIn,
+                    amountOut: .exact(value: method.amountBDesired),
+                    tokenIn: eip20Token(address: method.tokenA, eventInstances: eventInstances),
+                    tokenOut: eip20Token(address: method.tokenB, eventInstances: eventInstances),
+                    recipient: method.to == from ? nil : method.to,
+                    deadline: method.deadline
+            )
         default: ()
         }
 
