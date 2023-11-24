@@ -259,34 +259,36 @@ extension TradeManager {
         default: throw UnsupportedChainError.noInitCodeHash
         }
     }
-
 }
 
 extension TradeManager {
-
-    func transactionLiquidityData(tradeData: TradeData) throws -> TransactionData {
-        return try buildLiquidityData(tradeData: tradeData)
+        
+    func transactionLiquidityData(tradeData: TradeData, type: LiquidityHandleType) throws -> TransactionData {
+        return try buildLiquidityData(tradeData: tradeData, type: type)
     }
     
-    private func buildLiquidityData(tradeData: TradeData) throws -> TransactionData {
+    private func buildLiquidityData(tradeData: TradeData, type: LiquidityHandleType) throws -> TransactionData {
         let trade = tradeData.trade
 
-        let tokenIn = trade.tokenAmountIn.token
-        let tokenOut = trade.tokenAmountOut.token
+        let tokenA = trade.tokenAmountIn.token
+        let tokenB = trade.tokenAmountOut.token
 
-        let path = trade.route.path.map {
-            $0.address
-        }
         let to = tradeData.options.recipient ?? address
         let deadline = BigUInt(Date().timeIntervalSince1970 + tradeData.options.ttl)
         
-        let slippage: BigUInt = (tokenIn.address.hex == "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c" || tokenOut.address.hex == "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c") ? 25 : 5
+        let slippage: BigUInt = (tokenA.address.hex == "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c" || tokenB.address.hex == "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c") ? 25 : 5
         
         let amountAMin = trade.tokenAmountIn.rawAmount.multiplied(by: slippage)
         let amountBMin = trade.tokenAmountOut.rawAmount.multiplied(by: slippage)
-
-        let method = try buildMethodForLiquidityOut(tokenIn: tokenIn, tokenOut: tokenOut, to: to, deadline: deadline, tradeData: tradeData, trade: trade, amountAMin: amountAMin, amountBMin: amountBMin)
-
+        
+        let method: ContractMethod
+        
+        switch type {
+        case .add:
+            method = try buildMethodForAddLiquidity(tokenA: tokenA.address, tokenB: tokenB.address, amountADesired: trade.tokenAmountIn.rawAmount, amountBDesired: trade.tokenAmountOut.rawAmount, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
+        case .remove(let liquidity):
+            method = try buildMethodForRemoveLiquidity(tokenA: tokenA.address, tokenB: tokenB.address, liquidity: liquidity, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
+        }
 
         return TransactionData(
             to: routerAddress,
@@ -295,8 +297,16 @@ extension TradeManager {
         )
     }
     
-    private func buildMethodForLiquidityOut(tokenIn: Token, tokenOut: Token, to: Address, deadline: BigUInt, tradeData: TradeData, trade: Trade, amountAMin: BigUInt, amountBMin: BigUInt) throws -> ContractMethod {
-
-        return AddLiquidityMethod(tokenA: tokenIn.address, tokenB: tokenOut.address, amountADesired: trade.tokenAmountIn.rawAmount, amountBDesired: trade.tokenAmountOut.rawAmount, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
+    private func buildMethodForAddLiquidity(tokenA: Address, tokenB: Address, amountADesired: BigUInt, amountBDesired: BigUInt, amountAMin: BigUInt, amountBMin: BigUInt, to: Address, deadline: BigUInt) throws -> ContractMethod {
+        return AddLiquidityMethod(tokenA: tokenA, tokenB: tokenB, amountADesired: amountADesired, amountBDesired: amountBDesired, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
     }
+    
+    private func buildMethodForRemoveLiquidity(tokenA: Address, tokenB: Address, liquidity: BigUInt, amountAMin: BigUInt, amountBMin: BigUInt, to: Address, deadline: BigUInt) throws -> ContractMethod {
+        return RemoveLiquidityMethod(tokenA: tokenA, tokenB: tokenB, liquidity: liquidity, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
+    }
+}
+
+ public enum LiquidityHandleType {
+    case add
+    case remove(liquidity: BigUInt)
 }

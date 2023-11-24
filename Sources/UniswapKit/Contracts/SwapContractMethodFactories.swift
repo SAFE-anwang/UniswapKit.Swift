@@ -6,6 +6,11 @@ class SwapContractMethodFactories: ContractMethodFactories {
     override init() {
         super.init()
         register(factories: [
+            AddLiquidityMethodFactory(),
+            RemoveLiquidityMethodFactory(),
+            AddLiquidityETHMethodFactory(),
+            RemoveLiquidityETHMethodFactory(),
+            // to do ... AddLiquidityETHWithPermit、RemoveLiquidityETHWithPermit
             SwapETHForExactTokensMethodFactory(),
             SwapExactETHForTokensMethodFactory(),
             SwapExactTokensForETHMethodFactory(),

@@ -90,7 +90,11 @@ extension Kit {
     public func transactionData(tradeData: TradeData) throws -> TransactionData {
         try tradeManager.transactionData(tradeData: tradeData)
     }
-
+    
+    public func transactionLiquidityData(tradeData: TradeData, type: LiquidityHandleType) throws -> TransactionData {
+        try tradeManager.transactionLiquidityData(tradeData: tradeData, type: type)
+    }
+    
 }
 
 extension Kit {
