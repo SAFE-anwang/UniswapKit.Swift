@@ -41,6 +41,13 @@ class SwapTransactionDecorator {
                 tokenInfo: eventInstances.compactMap { $0 as? TransferEventInstance }.first { $0.contractAddress == address }?.tokenInfo
         )
     }
+    
+    private func eip20Token(address: Address, eventInstances: [ContractEventInstance]) -> LiquidityDecoration.Token {
+        .eip20Coin(
+                address: address,
+                tokenInfo: eventInstances.compactMap { $0 as? TransferEventInstance }.first { $0.contractAddress == address }?.tokenInfo
+        )
+    }
 
 }
 
@@ -171,18 +178,22 @@ extension SwapTransactionDecorator: ITransactionDecorator {
                     deadline: method.deadline
             )
         case let method as AddLiquidityMethod:
- 
-            let totalAmount = totalTokenAmount(userAddress: method.to, tokenAddress: method.tokenA, eventInstances: eventInstances, collectIncomingAmounts: true)
-            let amountIn: SwapDecoration.Amount = totalAmount != 0 ? .exact(value: totalAmount) : .extremum(value: method.amountADesired)
+            guard internalTransactions.count == 0, eventInstances.count == 0 else {
+                return nil
+            }
+            let totalAmountA = totalTokenAmount(userAddress: method.to, tokenAddress: method.tokenA, eventInstances: eventInstances, collectIncomingAmounts: true)
+            let totalAmountB = totalTokenAmount(userAddress: method.to, tokenAddress: method.tokenB, eventInstances: eventInstances, collectIncomingAmounts: true)
 
-            return SwapDecoration(
-                    contractAddress: to,
-                    amountIn: amountIn,
-                    amountOut: .exact(value: method.amountBDesired),
-                    tokenIn: eip20Token(address: method.tokenA, eventInstances: eventInstances),
-                    tokenOut: eip20Token(address: method.tokenB, eventInstances: eventInstances),
-                    recipient: method.to == from ? nil : method.to,
-                    deadline: method.deadline
+            let amountInA: LiquidityDecoration.Amount = totalAmountA != 0 ? .exact(value: totalAmountA) : .extremum(value: method.amountADesired)
+            let amountInB: LiquidityDecoration.Amount = totalAmountB != 0 ? .exact(value: totalAmountB) : .extremum(value: method.amountBDesired)
+
+            return LiquidityDecoration(contractAddress: to,
+                                       amountInA: amountInA,
+                                       amountInB: amountInB,
+                                       tokenInA: eip20Token(address: method.tokenB, eventInstances: eventInstances),
+                                       tokenInB: eip20Token(address: method.tokenB, eventInstances: eventInstances),
+                                       recipient: method.to == from ? nil : method.to,
+                                       deadline: method.deadline
             )
         default: ()
         }
