@@ -278,8 +278,8 @@ extension TradeManager {
         
         let slippage: BigUInt = (tokenA.address.hex == "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c" || tokenB.address.hex == "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c") ? 25 : 5
         
-        let amountAMin = trade.tokenAmountIn.rawAmount.multiplied(by: slippage)
-        let amountBMin = trade.tokenAmountOut.rawAmount.multiplied(by: slippage)
+        let amountAMin = trade.tokenAmountIn.rawAmount.multiplied(by: slippage/1000)
+        let amountBMin = trade.tokenAmountOut.rawAmount.multiplied(by: slippage/1000)
         
         let method: ContractMethod
         
