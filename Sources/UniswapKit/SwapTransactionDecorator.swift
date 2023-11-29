@@ -190,7 +190,7 @@ extension SwapTransactionDecorator: ITransactionDecorator {
             return LiquidityDecoration(contractAddress: to,
                                        amountInA: amountInA,
                                        amountInB: amountInB,
-                                       tokenInA: eip20Token(address: method.tokenB, eventInstances: eventInstances),
+                                       tokenInA: eip20Token(address: method.tokenA, eventInstances: eventInstances),
                                        tokenInB: eip20Token(address: method.tokenB, eventInstances: eventInstances),
                                        recipient: method.to == from ? nil : method.to,
                                        deadline: method.deadline
