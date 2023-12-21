@@ -99,10 +99,10 @@ extension Kit {
 
 extension Kit {
 
-    public static func instance(evmKit: EvmKit.Kit) throws -> Kit {
+    public static func instance(evmKit: EvmKit.Kit, isSafeSwap: Bool = false) throws -> Kit {
         let address = evmKit.address
 
-        let tradeManager = try TradeManager(evmKit: evmKit, address: address)
+        let tradeManager = try TradeManager(evmKit: evmKit, address: address, isSafeSwap: isSafeSwap)
         let tokenFactory = try TokenFactory(chain: evmKit.chain)
         let pairSelector = PairSelector(tokenFactory: tokenFactory)
 

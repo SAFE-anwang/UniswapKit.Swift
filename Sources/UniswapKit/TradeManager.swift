@@ -10,11 +10,10 @@ class TradeManager {
 
     private let evmKit: EvmKit.Kit
     private let address: Address
-
-    init(evmKit: EvmKit.Kit, address: Address) throws {
-        routerAddress = try Self.routerAddress(chain: evmKit.chain)
-        factoryAddressString = try Self.factoryAddressString(chain: evmKit.chain)
-        initCodeHashString = try Self.initCodeHashString(chain: evmKit.chain)
+    init(evmKit: EvmKit.Kit, address: Address, isSafeSwap: Bool = false) throws {
+        routerAddress = try Self.routerAddress(chain: evmKit.chain, isSafeSwap:isSafeSwap)
+        factoryAddressString = try Self.factoryAddressString(chain: evmKit.chain, isSafeSwap:isSafeSwap)
+        initCodeHashString = try Self.initCodeHashString(chain: evmKit.chain, isSafeSwap:isSafeSwap)
 
         self.evmKit = evmKit
         self.address = address
@@ -230,33 +229,61 @@ extension TradeManager {
         return trades
     }
 
-    private static func routerAddress(chain: Chain) throws -> Address {
-        switch chain {
-        case .ethereum, .ethereumRopsten, .ethereumRinkeby, .ethereumKovan, .ethereumGoerli: return try Address(hex: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
-        case .binanceSmartChain: return try Address(hex: "0x10ED43C718714eb63d5aA57B78B54704E256024E")
-        case .polygon: return try Address(hex: "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff")
-        case .avalanche: return try Address(hex: "0x60aE616a2155Ee3d9A68541Ba4544862310933d4")
-        default: throw UnsupportedChainError.noRouterAddress
+    private static func routerAddress(chain: Chain, isSafeSwap: Bool) throws -> Address {
+        if isSafeSwap {
+            switch chain {
+            case .ethereum, .ethereumGoerli: return try Address(hex: "0x6476008C612dF9F8Db166844fFE39D24aEa12271")
+            case .binanceSmartChain: return try Address(hex: "0x6476008C612dF9F8Db166844fFE39D24aEa12271")
+            case .polygon: return try Address(hex: "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff")
+            case .avalanche: return try Address(hex: "0x60aE616a2155Ee3d9A68541Ba4544862310933d4")
+            default: throw UnsupportedChainError.noRouterAddress
+            }
+        }else {
+            switch chain {
+            case .ethereum, .ethereumRopsten, .ethereumRinkeby, .ethereumKovan, .ethereumGoerli: return try Address(hex: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
+            case .binanceSmartChain: return try Address(hex: "0x10ED43C718714eb63d5aA57B78B54704E256024E")
+            case .polygon: return try Address(hex: "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff")
+            case .avalanche: return try Address(hex: "0x60aE616a2155Ee3d9A68541Ba4544862310933d4")
+            default: throw UnsupportedChainError.noRouterAddress
+            }
         }
     }
 
-    private static func factoryAddressString(chain: Chain) throws -> String {
-        switch chain {
-        case .ethereum, .ethereumRopsten, .ethereumRinkeby, .ethereumKovan, .ethereumGoerli: return "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
-        case .binanceSmartChain: return "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
-        case .polygon: return "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
-        case .avalanche: return "0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10"
-        default: throw UnsupportedChainError.noFactoryAddress
+    private static func factoryAddressString(chain: Chain, isSafeSwap: Bool) throws -> String {
+        if isSafeSwap {
+            switch chain {
+            case .ethereum, .ethereumGoerli: return "0xB3c827077312163c53E3822defE32cAffE574B42"
+            case .binanceSmartChain: return "0xB3c827077312163c53E3822defE32cAffE574B42"
+            case .polygon: return "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
+            case .avalanche: return "0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10"
+            default: throw UnsupportedChainError.noFactoryAddress
+            }
+        }else {
+            switch chain {
+            case .ethereum, .ethereumRopsten, .ethereumRinkeby, .ethereumKovan, .ethereumGoerli: return "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
+            case .binanceSmartChain: return "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+            case .polygon: return "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
+            case .avalanche: return "0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10"
+            default: throw UnsupportedChainError.noFactoryAddress
+            }
         }
     }
 
-    private static func initCodeHashString(chain: Chain) throws -> String {
-        switch chain {
-        case .ethereum, .ethereumRopsten, .ethereumRinkeby, .ethereumKovan, .ethereumGoerli: return "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
-        case .binanceSmartChain: return "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"
-        case .polygon: return "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
-        case .avalanche: return "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
-        default: throw UnsupportedChainError.noInitCodeHash
+    private static func initCodeHashString(chain: Chain, isSafeSwap: Bool) throws -> String {
+        if isSafeSwap {
+            switch chain {
+            case .ethereum, .ethereumGoerli, .polygon, .avalanche: return "0xad0e51aa7a058efb9eb40fd6385473f0175ee7419e8d4f91a4e0294ec12b2d13"
+            case .binanceSmartChain: return "0xad0e51aa7a058efb9eb40fd6385473f0175ee7419e8d4f91a4e0294ec12b2d13"
+            default: throw UnsupportedChainError.noInitCodeHash
+            }
+        }else {
+            switch chain {
+            case .ethereum, .ethereumRopsten, .ethereumRinkeby, .ethereumKovan, .ethereumGoerli: return "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
+            case .binanceSmartChain: return "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"
+            case .polygon: return "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
+            case .avalanche: return "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
+            default: throw UnsupportedChainError.noInitCodeHash
+            }
         }
     }
 }
