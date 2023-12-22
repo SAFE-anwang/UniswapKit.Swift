@@ -24,6 +24,10 @@ extension Kit {
     public var etherToken: Token {
         tokenFactory.etherToken
     }
+    
+    public var isSafeSwap: Bool {
+        tradeManager.isSafeSwap
+    }
 
     public func token(contractAddress: Address, decimals: Int) -> Token {
         tokenFactory.token(contractAddress: contractAddress, decimals: decimals)
@@ -101,13 +105,12 @@ extension Kit {
 
     public static func instance(evmKit: EvmKit.Kit, isSafeSwap: Bool = false) throws -> Kit {
         let address = evmKit.address
-
+        
         let tradeManager = try TradeManager(evmKit: evmKit, address: address, isSafeSwap: isSafeSwap)
         let tokenFactory = try TokenFactory(chain: evmKit.chain)
         let pairSelector = PairSelector(tokenFactory: tokenFactory)
 
         let uniswapKit = Kit(tradeManager: tradeManager, pairSelector: pairSelector, tokenFactory: tokenFactory)
-
         return uniswapKit
     }
 

@@ -7,7 +7,7 @@ class TradeManager {
     public let routerAddress: Address
     private let factoryAddressString: String
     private let initCodeHashString: String
-
+    public let isSafeSwap: Bool
     private let evmKit: EvmKit.Kit
     private let address: Address
     init(evmKit: EvmKit.Kit, address: Address, isSafeSwap: Bool = false) throws {
@@ -15,6 +15,7 @@ class TradeManager {
         factoryAddressString = try Self.factoryAddressString(chain: evmKit.chain, isSafeSwap:isSafeSwap)
         initCodeHashString = try Self.initCodeHashString(chain: evmKit.chain, isSafeSwap:isSafeSwap)
 
+        self.isSafeSwap = isSafeSwap
         self.evmKit = evmKit
         self.address = address
     }
