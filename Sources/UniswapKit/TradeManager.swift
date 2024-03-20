@@ -5,23 +5,12 @@ import HsCryptoKit
 import HsToolKit
 
 class TradeManager {
-    public let routerAddress: Address
-    private let factoryAddressString: String
-    private let initCodeHashString: String
     public let isSafeSwap: Bool
-    private let chain: Chain
-    private let address: Address
     private let networkManager: NetworkManager
     
-    init(networkManager: NetworkManager, chain: Chain, address: Address, isSafeSwap: Bool = false) throws {
+    init(networkManager: NetworkManager, isSafeSwap: Bool = false) throws {
         self.networkManager = networkManager
-        routerAddress = try Self.routerAddress(chain: chain, isSafeSwap:isSafeSwap)
-        factoryAddressString = try Self.factoryAddressString(chain: chain, isSafeSwap:isSafeSwap)
-        initCodeHashString = try Self.initCodeHashString(chain: chain, isSafeSwap:isSafeSwap)
-
         self.isSafeSwap = isSafeSwap
-        self.chain = chain
-        self.address = address
     }
 
     private func buildSwapData(receiveAddress: Address, tradeData: TradeData) throws -> SwapData {
@@ -93,8 +82,8 @@ extension TradeManager {
 
         let pairAddress = try Pair.address(
             token0: token0, token1: token1,
-            factoryAddressString: Self.factoryAddressString(chain: chain),
-            initCodeHashString: Self.initCodeHashString(chain: chain)
+            factoryAddressString: Self.factoryAddressString(chain: chain, isSafeSwap: isSafeSwap),
+            initCodeHashString: Self.initCodeHashString(chain: chain, isSafeSwap: isSafeSwap)
         )
 
 //        print("PAIR ADDRESS: \(pairAddress.toHexString())")
@@ -122,7 +111,7 @@ extension TradeManager {
         let swapData = try buildSwapData(receiveAddress: receiveAddress, tradeData: tradeData)
 
         return try TransactionData(
-            to: Self.routerAddress(chain: chain),
+            to: Self.routerAddress(chain: chain, isSafeSwap: isSafeSwap),
             value: swapData.amount,
             input: swapData.input
         )
@@ -229,7 +218,7 @@ extension TradeManager {
         return trades
     }
 
-    private static func routerAddress(chain: Chain, isSafeSwap: Bool) throws -> Address {
+   static func routerAddress(chain: Chain, isSafeSwap: Bool) throws -> Address {
         if isSafeSwap {
             switch chain {
             case .ethereum, .ethereumGoerli: return try Address(hex: "0x6476008C612dF9F8Db166844fFE39D24aEa12271")
@@ -290,17 +279,17 @@ extension TradeManager {
 
 extension TradeManager {
         
-    func transactionLiquidityData(tradeData: TradeData, type: LiquidityHandleType) throws -> TransactionData {
-        return try buildLiquidityData(tradeData: tradeData, type: type)
+    func transactionLiquidityData(tradeData: TradeData, type: LiquidityHandleType, chain: Chain, recipient: Address) throws -> TransactionData {
+        return try buildLiquidityData(tradeData: tradeData, type: type, chain: chain, recipient: recipient)
     }
     
-    private func buildLiquidityData(tradeData: TradeData, type: LiquidityHandleType) throws -> TransactionData {
+    private func buildLiquidityData(tradeData: TradeData, type: LiquidityHandleType, chain: Chain, recipient: Address) throws -> TransactionData {
         let trade = tradeData.trade
 
         let tokenA = trade.tokenAmountIn.token
         let tokenB = trade.tokenAmountOut.token
 
-        let to = tradeData.options.recipient ?? address
+        let to = tradeData.options.recipient ?? recipient
         let deadline = BigUInt(Date().timeIntervalSince1970 + tradeData.options.ttl)
         
         let slippage: BigUInt = (tokenA.address.hex == "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c" || tokenB.address.hex == "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c") ? 25 : 5
@@ -317,8 +306,8 @@ extension TradeManager {
             method = try buildMethodForRemoveLiquidity(tokenA: tokenA.address, tokenB: tokenB.address, liquidity: liquidity, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
         }
 
-        return TransactionData(
-            to: routerAddress,
+        return try TransactionData(
+            to: Self.routerAddress(chain: chain, isSafeSwap: isSafeSwap),
             value: trade.tokenAmountIn.rawAmount,
             input: method.encodedABI()
         )

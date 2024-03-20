@@ -16,8 +16,9 @@ public class Kit {
 }
 
 public extension Kit {
-    func routerAddress(chain: Chain) throws -> Address {
-        try TradeManager.routerAddress(chain: chain)
+    func routerAddress(chain: Chain, isSafeSwap: Bool = false) throws -> Address {
+        try TradeManager.routerAddress(chain: chain, isSafeSwap: isSafeSwap)
+
     }
 
     func etherToken(chain: Chain) throws -> Token {
@@ -96,15 +97,16 @@ public extension Kit {
         try tradeManager.transactionData(receiveAddress: receiveAddress, chain: chain, tradeData: tradeData)
     }
     
-    public func transactionLiquidityData(tradeData: TradeData, type: LiquidityHandleType) throws -> TransactionData {
-        try tradeManager.transactionLiquidityData(tradeData: tradeData, type: type)
+    public func transactionLiquidityData(tradeData: TradeData, type: LiquidityHandleType, chain: Chain, recipient: Address) throws -> TransactionData {
+        try tradeManager.transactionLiquidityData(tradeData: tradeData, type: type, chain: chain, recipient: recipient)
     }
 }
 
 public extension Kit {
-    static func instance() throws -> Kit {
-        let networkManager = NetworkManager()
-        let tradeManager = TradeManager(networkManager: networkManager)
+    static func instance(isSafeSwap: Bool = false) throws -> Kit {
+         let networkManager = NetworkManager()
+        let tradeManager = try TradeManager(networkManager: networkManager, isSafeSwap: isSafeSwap)
+
         let tokenFactory = TokenFactory()
         let pairSelector = PairSelector(tokenFactory: tokenFactory)
 
