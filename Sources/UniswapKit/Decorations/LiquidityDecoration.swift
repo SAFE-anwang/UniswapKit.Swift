@@ -10,8 +10,10 @@ public class LiquidityDecoration: TransactionDecoration {
     public let tokenInB: Token
     public let recipient: Address?
     public let deadline: BigUInt?
+    public let internalTransactions: [InternalTransaction]
+    public let eventInstances: [ContractEventInstance]
 
-    public init(contractAddress: Address, amountInA: Amount, amountInB: Amount, tokenInA: Token, tokenInB: Token, recipient: Address?, deadline: BigUInt?) {
+    public init(contractAddress: Address, amountInA: Amount, amountInB: Amount, tokenInA: Token, tokenInB: Token, recipient: Address?, deadline: BigUInt?, internalTransactions: [InternalTransaction],  eventInstances: [ContractEventInstance]) {
         self.contractAddress = contractAddress
         self.amountInA = amountInA
         self.amountInB = amountInB
@@ -19,6 +21,9 @@ public class LiquidityDecoration: TransactionDecoration {
         self.tokenInB = tokenInB
         self.recipient = recipient
         self.deadline = deadline
+        self.internalTransactions = internalTransactions
+        self.eventInstances = eventInstances
+
 
         super.init()
     }
