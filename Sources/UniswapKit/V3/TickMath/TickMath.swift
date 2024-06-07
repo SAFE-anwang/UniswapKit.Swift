@@ -3,10 +3,10 @@ import EvmKit
 import Foundation
 import HsToolKit
 
-class TickMath {
+public class TickMath {
     
-    static let MIN_TICK: BigInt = -887272
-    static let MAX_TICK: BigInt = -MIN_TICK
+    public static let MIN_TICK: BigInt = -887272
+    public static let MAX_TICK: BigInt = -MIN_TICK
     
     static let Q96: BigUInt = BigUInt(1) << 96 // Q64.96 "79228162514264337593543950336"
     static let MIN_SQRT_RATIO: BigUInt = BigUInt("4295128739")
