@@ -23,6 +23,11 @@ class MainController: UITabBarController {
             swapNavigation.tabBarItem.image = UIImage(named: "Send Tab Bar Icon")
             controllers.append(swapNavigation)
         }
+        
+        let swapNavigation = UINavigationController(rootViewController: LiquidityController())
+        swapNavigation.tabBarItem.title = "Liquidity"
+        swapNavigation.tabBarItem.image = UIImage(named: "Send Tab Bar Icon")
+        controllers.append(swapNavigation)
 
         let receiveNavigation = UINavigationController(rootViewController: ReceiveController())
         receiveNavigation.tabBarItem.title = "Receive"

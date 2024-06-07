@@ -1,6 +1,7 @@
 import EvmKit
 import Foundation
 import HsToolKit
+import BigInt
 
 class Pool {
     private let networkManager: NetworkManager
@@ -9,7 +10,7 @@ class Pool {
     private let token1: Address
     private let fee: KitV3.FeeAmount
 
-    let poolAddress: Address
+    public let poolAddress: Address
 
     init(networkManager: NetworkManager, rpcSource: RpcSource, chain: Chain, token0: Address, token1: Address, fee: KitV3.FeeAmount, dexType: DexType) async throws {
         self.networkManager = networkManager
@@ -60,6 +61,12 @@ extension Pool {
         let data = try await Self.call(networkManager: networkManager, rpcSource: rpcSource, address: poolAddress, data: method.encodedABI())
 
         return Address(raw: data).hex
+    }
+    
+    public func liquidity() async throws -> BigUInt {
+        let method = LiquidityMethod()
+        let data = try await Self.call(networkManager: networkManager, rpcSource: rpcSource, address: poolAddress, data: method.encodedABI())
+        return BigUInt(data)
     }
 
     enum PoolError: Error {

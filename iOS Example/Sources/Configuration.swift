@@ -13,7 +13,7 @@ class Configuration {
 
     let minLogLevel: Logger.Level = .error
 
-    let chain: Chain = .ethereum
+    let chain: Chain = .binanceSmartChain//.ethereum
     var rpcSource: RpcSource {
         switch chain {
         case .arbitrumOne: return RpcSource.arbitrumOneRpcHttp()
@@ -47,12 +47,15 @@ class Configuration {
                 Erc20Token(name: "SUSHI", code: "SUSHI", contractAddress: try! Address(hex: "0x6B3595068778DD592e39A122f4f5a5cF09C90fE2"), decimals: 18),
                 Erc20Token(name: "USD Coin", code: "USDC", contractAddress: try! Address(hex: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), decimals: 6),
                 Erc20Token(name: "POP", code: "POP", contractAddress: try! Address(hex: "0xD0Cd466b34A24fcB2f87676278AF2005Ca8A78c4"), decimals: 18),
+                Erc20Token(name: "SAFE", code: "SAFE", contractAddress: try! Address(hex: "0xee9c1ea4dcf0aaf4ff2d78b6ff83aa69797b65eb"), decimals: 18),
             ]
         case .binanceSmartChain: return [
                 Erc20Token(name: "Binance Smart Chain", code: "BSC", contractAddress: nil, decimals: 18),
                 Erc20Token(name: "Beefy.Finance", code: "BIFI", contractAddress: try! Address(hex: "0xCa3F508B8e4Dd382eE878A314789373D80A5190A"), decimals: 18),
                 Erc20Token(name: "PancakeSwap", code: "CAKE", contractAddress: try! Address(hex: "0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82"), decimals: 18),
                 Erc20Token(name: "BUSD", code: "BUSD", contractAddress: try! Address(hex: "0xe9e7cea3dedca5984780bafc599bd69add087d56"), decimals: 18),
+                Erc20Token(name: "SAFE", code: "SAFE", contractAddress: try! Address(hex: "0x4d7fa587ec8e50bd0e9cd837cb4da796f47218a1"), decimals: 18),
+                Erc20Token(name: "USDT", code: "USDT", contractAddress: try! Address(hex: "0x55d398326f99059fF775485246999027B3197955"), decimals: 18),
             ]
         case .ethereumGoerli: return [
                 Erc20Token(name: "Ethereum", code: "ETH", contractAddress: nil, decimals: 18),

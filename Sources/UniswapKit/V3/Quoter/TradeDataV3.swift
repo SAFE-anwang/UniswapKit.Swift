@@ -14,6 +14,11 @@ public class TradeDataV3 {
         let amountInMax = ((Fraction(numerator: 1) + options.slippageFraction) * Fraction(numerator: trade.tokenAmountIn.rawAmount)).quotient
         return TokenAmount(token: trade.tokenAmountIn.token, rawAmount: amountInMax)
     }
+    
+    var tokenAmountInMin: TokenAmount {
+        let amountInMin = ((Fraction(numerator: 1) + options.slippageFraction).inverted * Fraction(numerator: trade.tokenAmountIn.rawAmount)).quotient
+        return TokenAmount(token: trade.tokenAmountIn.token, rawAmount: amountInMin)
+    }
 
     var tokenAmountOutMin: TokenAmount {
         let amountOutMin = ((Fraction(numerator: 1) + options.slippageFraction).inverted * Fraction(numerator: trade.tokenAmountOut.rawAmount)).quotient
@@ -57,5 +62,16 @@ public extension TradeDataV3 {
 
     var priceImpact: Decimal? {
         trade.priceImpact
+    }
+    
+    var fee: BigUInt {
+        trade.swapPath.firstFeeAmount.rawValue
+    }
+}
+
+public extension TradeDataV3 {
+    
+    var tickInfo: TickInfo? {
+        trade.tickInfo
     }
 }

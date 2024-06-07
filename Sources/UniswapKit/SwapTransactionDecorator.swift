@@ -191,8 +191,8 @@ extension SwapTransactionDecorator: ITransactionDecorator {
                                        tokenInB: eip20Token(address: method.tokenB, eventInstances: eventInstances),
                                        recipient: method.to == from ? nil : method.to,
                                        deadline: method.deadline,
-                    internalTransactions: internalTransactions,
-                    eventInstances: eventInstances
+                                       internalTransactions: internalTransactions,
+                                       eventInstances: eventInstances
             )
         default: ()
         }

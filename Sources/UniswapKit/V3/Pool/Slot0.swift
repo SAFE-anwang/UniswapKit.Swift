@@ -1,11 +1,11 @@
 import BigInt
 import Foundation
 
-struct Slot0 {
+public struct Slot0 {
     // the current price
-    let sqrtPriceX96: BigUInt
+    public let sqrtPriceX96: BigUInt
     // the current tick
-    let tick: BigUInt
+    public let tick: BigInt
     // the most-recently updated index of the observations array
     let observationIndex: BigUInt
     // the current maximum number of observations that are being stored
@@ -23,7 +23,7 @@ struct Slot0 {
             return nil
         }
         sqrtPriceX96 = BigUInt(data[0 ..< 32])
-        tick = BigUInt(data[32 ..< 64])
+        tick = BigInt(data[32 ..< 64])
         observationIndex = BigUInt(data[64 ..< 96])
         observationCardinality = BigUInt(data[96 ..< 128])
         observationCardinalityNext = BigUInt(data[128 ..< 160])

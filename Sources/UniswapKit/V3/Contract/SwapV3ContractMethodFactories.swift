@@ -14,6 +14,9 @@ class SwapV3ContractMethodFactories: ContractMethodFactories {
             ExactOutputMethodFactory(),
             UnwrapWeth9MethodFactory(),
             MulticallMethodFactory(),
+            DecreaseLiquidityMethodFactory(),
+            IncreaseLiquidityMethodFactory(),
+            MintMethodFactory()
         ])
     }
 }

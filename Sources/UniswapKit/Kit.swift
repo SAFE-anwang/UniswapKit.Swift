@@ -25,7 +25,7 @@ public extension Kit {
         try tokenFactory.etherToken(chain: chain)
     }
     
-    public var isSafeSwap: Bool {
+    var isSafeSwap: Bool {
         tradeManager.isSafeSwap
     }
 
@@ -97,7 +97,7 @@ public extension Kit {
         try tradeManager.transactionData(receiveAddress: receiveAddress, chain: chain, tradeData: tradeData)
     }
     
-    public func transactionLiquidityData(tradeData: TradeData, type: LiquidityHandleType, chain: Chain, recipient: Address) throws -> TransactionData {
+    func transactionLiquidityData(tradeData: TradeData, type: LiquidityHandleType, chain: Chain, recipient: Address) throws -> TransactionData {
         try tradeManager.transactionLiquidityData(tradeData: tradeData, type: type, chain: chain, recipient: recipient)
     }
 }

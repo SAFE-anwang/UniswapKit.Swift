@@ -38,6 +38,9 @@ struct Fraction {
 
     func toDecimal(decimals: Int) -> Decimal? {
         let adjustedNumerator = numerator * BigUInt(10).power(decimals)
+        guard denominator > 0 else {
+            return nil
+        }
         let value = adjustedNumerator / denominator
 
         guard let significand = Decimal(string: value.description) else {

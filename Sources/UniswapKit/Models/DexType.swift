@@ -46,4 +46,13 @@ public enum DexType {
             return try! Address(hex: "0x13f4EA83D0bd40E75C8222255bc855a974568Dd4")
         }
     }
+    
+    func nonfungiblePositionAddress(chain: Chain) -> Address {
+        switch self {
+        case .uniswap:
+            return try! Address(hex: "0xC36442b4a4522E871399CD717aBDD847Ab11FE88")
+        case .pancakeSwap:
+            return try! Address(hex: "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364")
+        }
+    }
 }

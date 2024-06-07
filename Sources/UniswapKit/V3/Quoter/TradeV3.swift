@@ -9,12 +9,14 @@ public class TradeV3 {
     let slotPrices: [Decimal]
     let tokenAmountIn: TokenAmount
     let tokenAmountOut: TokenAmount
+    public var tickInfo: TickInfo?
 
-    public init(tradeType: TradeType, swapPath: SwapPath, amountIn: BigUInt, amountOut: BigUInt, tokenIn: Token, tokenOut: Token, slotPrices: [Decimal]) {
+    public init(tradeType: TradeType, swapPath: SwapPath, amountIn: BigUInt, amountOut: BigUInt, tokenIn: Token, tokenOut: Token, slotPrices: [Decimal], tickInfo: TickInfo? = nil) {
         type = tradeType
         self.swapPath = swapPath
         self.slotPrices = slotPrices
-
+        self.tickInfo = tickInfo
+        
         tokenAmountIn = TokenAmount(token: tokenIn, rawAmount: amountIn)
         tokenAmountOut = TokenAmount(token: tokenOut, rawAmount: amountOut)
 
@@ -47,3 +49,4 @@ public extension TradeV3 {
         return PriceImpactHelper.impact(price: slotPrice, real: tradePrice)
     }
 }
+

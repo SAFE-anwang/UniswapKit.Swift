@@ -45,6 +45,13 @@ class SwapV3TransactionDecorator {
             tokenInfo: eventInstances.compactMap { $0 as? TransferEventInstance }.first { $0.contractAddress == address }?.tokenInfo
         )
     }
+    
+    private func eip20TokenWithLiquidity(address: Address, eventInstances: [ContractEventInstance]) -> LiquidityDecoration.Token {
+        .eip20Coin(
+            address: address,
+            tokenInfo: eventInstances.compactMap { $0 as? TransferEventInstance }.first { $0.contractAddress == address }?.tokenInfo
+        )
+    }
 }
 
 extension SwapV3TransactionDecorator: ITransactionDecorator {
@@ -182,6 +189,61 @@ extension SwapV3TransactionDecorator: ITransactionDecorator {
                 amountInMaximum: method.amountInMaximum,
                 recipient: recipientOverride ?? method.recipient,
                 swapType: swapType(method.tokenIn)
+            )
+        case let method as MintMethod:
+            guard internalTransactions.count == 0, eventInstances.count == 0 else {
+                return nil
+            }
+            
+            let userAddress = method.recipient
+            let token0Address = method.token0
+            let token1Address = method.token1
+            
+            let totalAmountA = totalTokenAmount(userAddress: userAddress, tokenAddress: token0Address, eventInstances: eventInstances, collectIncomingAmounts: true)
+            let totalAmountB = totalTokenAmount(userAddress: userAddress, tokenAddress: token1Address, eventInstances: eventInstances, collectIncomingAmounts: true)
+
+            let amountInA: LiquidityDecoration.Amount = totalAmountA != 0 ? .exact(value: totalAmountA) : .extremum(value: method.amount0Desired)
+            let amountInB: LiquidityDecoration.Amount = totalAmountB != 0 ? .exact(value: totalAmountB) : .extremum(value: method.amount1Desired)
+
+            return LiquidityDecoration(contractAddress: to,
+                                       amountInA: amountInA,
+                                       amountInB: amountInB,
+                                       tokenInA: eip20TokenWithLiquidity(address: token0Address, eventInstances: eventInstances),
+                                       tokenInB: eip20TokenWithLiquidity(address: token1Address, eventInstances: eventInstances),
+                                       recipient: userAddress == from ? nil : userAddress,
+                                       deadline: method.deadline,
+                                       internalTransactions: internalTransactions,
+                                       eventInstances: eventInstances
+            )
+            
+        case let method as IncreaseLiquidityMethod:
+            guard internalTransactions.count == 0, eventInstances.count == 0 else {
+                return nil
+            }
+            let amount0: LiquidityV3Decoration.Amount = .extremum(value: method.amount0Desired)
+            let amount1: LiquidityV3Decoration.Amount = .extremum(value: method.amount1Desired)
+            return LiquidityV3Decoration(tokenId: method.tokenId, 
+                                         amount0: amount0,
+                                         amount1: amount1,
+                                         recipient: recipientOverride,
+                                         contractAddress: to,
+                                         deadline: method.deadline,
+                                         internalTransactions: internalTransactions,
+                                         eventInstances: eventInstances
+            )
+
+        case let method as DecreaseLiquidityMethod:
+            guard internalTransactions.count == 0, eventInstances.count == 0 else {
+                return nil
+            }
+            return LiquidityV3Decoration(tokenId: method.tokenId,
+                                         amount0: nil,
+                                         amount1: nil,
+                                         recipient: recipientOverride,
+                                         contractAddress: to,
+                                         deadline: method.deadline,
+                                         internalTransactions: internalTransactions,
+                                         eventInstances: eventInstances
             )
         default: return nil
         }
