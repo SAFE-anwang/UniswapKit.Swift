@@ -33,7 +33,7 @@ class Configuration {
         }
     }
 
-    let defaultsWords = "apart approve black comfort steel spin real renew tone primary key cherry"
+    let defaultsWords = "fan age analyst urban cheese lumber argue giggle submit juice close total"
     let defaultsWatchAddress = "0xDc3EAB13c26C0cA48843c16d1B27Ff8760515016"
 
     var erc20Tokens: [Erc20Token] {
