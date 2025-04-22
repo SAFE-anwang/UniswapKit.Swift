@@ -229,7 +229,7 @@ extension TradeManager {
             case .polygon: return try Address(hex: "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff")
             case .avalanche: return try Address(hex: "0x60aE616a2155Ee3d9A68541Ba4544862310933d4")
             case .base: return try Address(hex: "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24")
-            case .SafeFour: return try Address(hex: safeSwapv2Safe4Router)
+            case .SafeFour, .SafeFourTestNet: return try Address(hex: safeSwapv2Safe4Router)
             default: throw UnsupportedChainError.noRouterAddress
             }
         }else {
@@ -252,7 +252,7 @@ extension TradeManager {
             case .polygon: return "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
             case .avalanche: return "0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10"
             case .base: return "0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6"
-            case .SafeFour: return safeSwapv2Safe4Factory
+            case .SafeFour, .SafeFourTestNet: return safeSwapv2Safe4Factory
 
             default: throw UnsupportedChainError.noFactoryAddress
             }
@@ -273,7 +273,7 @@ extension TradeManager {
             switch chain {
             case .ethereum, .ethereumGoerli, .polygon, .avalanche, .base: return "0xad0e51aa7a058efb9eb40fd6385473f0175ee7419e8d4f91a4e0294ec12b2d13"
             case .binanceSmartChain: return "0xad0e51aa7a058efb9eb40fd6385473f0175ee7419e8d4f91a4e0294ec12b2d13"
-            case .SafeFour: return safeSwapv2Safe4CodeHash
+            case .SafeFour, .SafeFourTestNet: return safeSwapv2Safe4CodeHash
             default: throw UnsupportedChainError.noInitCodeHash
             }
         }else {
