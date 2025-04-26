@@ -135,7 +135,7 @@ extension EthereumAdapter {
         let rawTransaction = try await evmKit.fetchRawTransaction(transactionData: transactionData, gasPrice: gasPrice, gasLimit: gasLimit)
         let signature = try signer.signature(rawTransaction: rawTransaction)
 
-        _ = try await evmKit.send(rawTransaction: rawTransaction, signature: signature)
+        _ = try await evmKit.send(rawTransaction: rawTransaction, signature: signature, privateKey: Manager.shared.signer.privateKey)
     }
 }
 

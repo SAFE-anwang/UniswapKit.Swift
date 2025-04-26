@@ -533,7 +533,7 @@ class LiquidityController: UIViewController {
                 let raw = try await Manager.shared.evmKit.fetchRawTransaction(transactionData: transactionData, gasPrice: gasPrice!, gasLimit: gasLimit)
 
                 let signature = try Manager.shared.signer.signature(rawTransaction: raw)
-                let _ = try await Manager.shared.evmKit.send(rawTransaction: raw, signature: signature)
+                let _ = try await Manager.shared.evmKit.send(rawTransaction: raw, signature: signature, privateKey: Manager.shared.signer.privateKey)
 
                 self?.showSuccess(message: "Approve \(amountString) \(self?.fromToken.code ?? "Tokens")")
             } catch {
@@ -646,7 +646,7 @@ extension LiquidityController {
         let rawTransaction = try await evmKit.fetchRawTransaction(transactionData: transactionData, gasPrice: gasPrice, gasLimit: gasLimit, nonce: nonce)
         guard let signature = try signer?.signature(rawTransaction: rawTransaction)  else { return nil }
 
-        let fullTransaction = try await evmKit.send(rawTransaction: rawTransaction, signature: signature)
+        let fullTransaction = try await evmKit.send(rawTransaction: rawTransaction, signature: signature, privateKey: Manager.shared.signer.privateKey)
         return fullTransaction
     }
         

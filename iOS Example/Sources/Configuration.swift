@@ -26,10 +26,10 @@ class Configuration {
 
     var transactionSource: TransactionSource {
         switch chain {
-        case .arbitrumOne: return .arbiscan(apiKey: Configuration.arbiscanApiKey) //
-        case .binanceSmartChain: return .bscscan(apiKey: Configuration.bscScanKey)
-        case .ethereumGoerli: return .goerliEtherscan(apiKey: Configuration.etherscanKey) // ??
-        default: return .ethereumEtherscan(apiKey: Configuration.etherscanKey)
+        case .arbitrumOne: return .arbiscan(apiKeys: [Configuration.arbiscanApiKey]) //
+        case .binanceSmartChain: return .bscscan(apiKeys: [Configuration.bscScanKey])
+        case .ethereumGoerli: return .goerliEtherscan(apiKeys: [Configuration.etherscanKey]) // ??
+        default: return .ethereumEtherscan(apiKeys: [Configuration.etherscanKey])
         }
     }
 

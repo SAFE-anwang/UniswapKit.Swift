@@ -336,7 +336,7 @@ class SwapController: UIViewController {
                 let raw = try await Manager.shared.evmKit.fetchRawTransaction(transactionData: transactionData, gasPrice: gasPrice, gasLimit: gasLimit)
 
                 let signature = try Manager.shared.signer.signature(rawTransaction: raw)
-                let _ = try await Manager.shared.evmKit.send(rawTransaction: raw, signature: signature)
+                let _ = try await Manager.shared.evmKit.send(rawTransaction: raw, signature: signature, privateKey: Manager.shared.signer.privateKey)
 
                 self?.showSuccess(message: "Approve \(amountString) \(self?.fromToken.code ?? "Tokens")")
             } catch {
@@ -379,7 +379,7 @@ class SwapController: UIViewController {
                     let raw = try await Manager.shared.evmKit.fetchRawTransaction(transactionData: transactionData, gasPrice: gasPrice, gasLimit: gasLimit)
 
                     let signature = try Manager.shared.signer.signature(rawTransaction: raw)
-                    let _ = try await Manager.shared.evmKit.send(rawTransaction: raw, signature: signature)
+                    let _ = try await Manager.shared.evmKit.send(rawTransaction: raw, signature: signature, privateKey: Manager.shared.signer.privateKey)
 
                     self?.showSuccess(message: "Send successful! \(bestTrade.amountIn?.description) \(bestTrade.amountOut?.description)")
                 } catch {
