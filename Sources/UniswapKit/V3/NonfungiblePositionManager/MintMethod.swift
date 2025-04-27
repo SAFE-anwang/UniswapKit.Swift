@@ -1,47 +1,48 @@
-import EvmKit
 import Foundation
+import EvmKit
 import BigInt
 
-class MintMethod: ContractMethod {
-    static let methodSignature = "mint((address,address,uint24,int24,int24,uint256,uint256,uint256,uint256,address,uint256))"
-    let token0: Address
-    let token1: Address
-    let fee: BigUInt
-    let tickLower: BigInt
-    let tickUpper: BigInt
-    let amount0Desired: BigUInt
-    let amount1Desired: BigUInt
-    let amount0Min: BigUInt
-    let amount1Min: BigUInt
-    let recipient: Address
-    let deadline: BigUInt
-    
-    init(token0: Address, token1: Address, fee: BigUInt, tickLower: BigInt,tickUpper: BigInt, amount0Desired: BigUInt, amount1Desired: BigUInt, amount0Min: BigUInt, amount1Min: BigUInt, recipient: Address, deadline: BigUInt) {
-        self.token0 = token0
-        self.token1 = token1
-        self.fee = fee
-        self.tickLower = tickLower
-        self.tickUpper = tickUpper
-        self.amount0Desired = amount0Desired
-        self.amount1Desired = amount1Desired
-        self.amount0Min = amount0Min
-        self.amount1Min = amount1Min
-        self.recipient = recipient
-        self.deadline = deadline
-        super.init()
-    }
+class MintMethodFactory: IContractMethodFactory {
+    let methodId: Data = ContractMethodHelper.methodId(signature: MintMethod.methodSignature)
 
-    override var methodSignature: String { MintMethod.methodSignature }
+    func createMethod(inputArguments: Data) throws -> ContractMethod {
+        
+        if inputArguments.count <= 288 {
+            let parsedArguments = ContractMethodHelper.decodeABI(inputArguments: inputArguments, argumentTypes: [Address.self, Address.self, BigUInt.self, BigUInt.self, BigUInt.self, BigUInt.self, BigUInt.self, Address.self, BigUInt.self])
+            let tickLower = BigInt.zero
+            let tickUpper = BigInt.zero
+            guard let token0 = parsedArguments[0] as? Address,
+                  let token1 = parsedArguments[1] as? Address,
+                  let fee = parsedArguments[2] as? BigUInt,
+                  let amount0Desired = parsedArguments[3] as? BigUInt,
+                  let amount1Desired = parsedArguments[4] as? BigUInt,
+                  let amount0Min = parsedArguments[5] as? BigUInt,
+                  let amount1Min = parsedArguments[6] as? BigUInt,
+                  let recipient = parsedArguments[7] as? Address,
+                  let deadline = parsedArguments[8] as? BigUInt
+            else {
+                throw ContractMethodFactories.DecodeError.invalidABI
+            }
 
-    override var arguments: [Any] {
-        [token0, token1, fee, tickLower, tickUpper, amount0Desired, amount1Desired, amount0Min, amount1Min, recipient, deadline]
-    }
-    
-}
+            return MintMethod(token0: token0, token1: token1, fee: fee, tickLower: tickLower, tickUpper: tickUpper, amount0Desired: amount0Desired, amount1Desired: amount1Desired, amount0Min: amount0Min, amount1Min: amount1Min, recipient: recipient, deadline: deadline)
+        }else {
+            let parsedArguments = ContractMethodHelper.decodeABI(inputArguments: inputArguments, argumentTypes: [Address.self, Address.self, BigUInt.self, BigInt.self, BigInt.self, BigUInt.self, BigUInt.self, BigUInt.self, BigUInt.self, Address.self, BigUInt.self])
+            guard let token0 = parsedArguments[0] as? Address,
+                  let token1 = parsedArguments[1] as? Address,
+                  let fee = parsedArguments[2] as? BigUInt,
+                  let tickLower = parsedArguments[3] as? BigInt,
+                  let tickUpper = parsedArguments[4] as? BigInt,
+                  let amount0Desired = parsedArguments[5] as? BigUInt,
+                  let amount1Desired = parsedArguments[6] as? BigUInt,
+                  let amount0Min = parsedArguments[7] as? BigUInt,
+                  let amount1Min = parsedArguments[8] as? BigUInt,
+                  let recipient = parsedArguments[9] as? Address,
+                  let deadline = parsedArguments[10] as? BigUInt
+            else {
+                throw ContractMethodFactories.DecodeError.invalidABI
+            }
 
-extension ContractMethod {
-    
-    func encodedABI_fix() -> Data {
-        ContractMethodHelper_fix.encodedABI(methodId: methodId, arguments: arguments)
+            return MintMethod(token0: token0, token1: token1, fee: fee, tickLower: tickLower, tickUpper: tickUpper, amount0Desired: amount0Desired, amount1Desired: amount1Desired, amount0Min: amount0Min, amount1Min: amount1Min, recipient: recipient, deadline: deadline)
+        }
     }
 }
