@@ -10,10 +10,11 @@ class Configuration {
     private static let etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
     private static let arbiscanApiKey = "Z43JN5434XVNA5D73UGPWKF26G5D9MGDPZ"
     private static let bscScanKey = "5ZGSHWYHZVA8XZHB8PF6UUTRNNB4KT43ZZ"
+    private static let safe4Key = "5ZGSHWYHZVA8XZHB8PF6UUTRNNB4KT43ZZ"
 
     let minLogLevel: Logger.Level = .error
 
-    let chain: Chain = .binanceSmartChain//.ethereum
+    let chain: Chain = .SafeFour
     var rpcSource: RpcSource {
         switch chain {
         case .arbitrumOne: return RpcSource.arbitrumOneRpcHttp()
@@ -29,6 +30,7 @@ class Configuration {
         case .arbitrumOne: return .arbiscan(apiKeys: [Configuration.arbiscanApiKey]) //
         case .binanceSmartChain: return .bscscan(apiKeys: [Configuration.bscScanKey])
         case .ethereumGoerli: return .goerliEtherscan(apiKeys: [Configuration.etherscanKey]) // ??
+        case .SafeFour: return .safeFourscan(apiKeys: [Configuration.etherscanKey])
         default: return .ethereumEtherscan(apiKeys: [Configuration.etherscanKey])
         }
     }
@@ -70,6 +72,10 @@ class Configuration {
                 Erc20Token(name: "LivePeer", code: "LPT", contractAddress: try! Address(hex: "0x289ba1701C2F088cf0faf8B3705246331cB8A839"), decimals: 18),
                 Erc20Token(name: "Arbitrum", code: "ARB", contractAddress: try! Address(hex: "0x912CE59144191C1204E64559FE8253a0e49E6548"), decimals: 18),
                 Erc20Token(name: "GMX", code: "GMX", contractAddress: try! Address(hex: "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a"), decimals: 18),
+            ]
+        case .SafeFour: return [
+                Erc20Token(name: "SAFE", code: "MSB", contractAddress: try! Address(hex: "0xB2553614135e5e2205b302a8D10ca23e55902d69"), decimals: 18),
+                Erc20Token(name: "SAFE", code: "MSA", contractAddress: try! Address(hex: "0x61873c9478dEB4Bb2c4d04E86e67c45C09377202"), decimals: 18),
             ]
         default: return []
         }

@@ -4,16 +4,7 @@ import Foundation
 import HsCryptoKit
 import HsToolKit
 
-class TradeManager {
-    // safe4 swap config
-    static let safeSwapv2Safe4Router = "0x6476008C612dF9F8Db166844fFE39D24aEa12271"
-    static let safeSwapv2Safe4CodeHash = "ad0e51aa7a058efb9eb40fd6385473f0175ee7419e8d4f91a4e0294ec12b2d13"
-    static let safeSwapv2Safe4Factory = "0xB3c827077312163c53E3822defE32cAffE574B42"
-    
-    static let safeSwapv2Safe4Router_test = "0x6476008C612dF9F8Db166844fFE39D24aEa12271"
-    static let safeSwapv2Safe4CodeHash_test = "ad0e51aa7a058efb9eb40fd6385473f0175ee7419e8d4f91a4e0294ec12b2d13"
-    static let safeSwapv2Safe4Factory_test = "0xB3c827077312163c53E3822defE32cAffE574B42"
-    
+class TradeManager {    
     public let isSafeSwap: Bool
     private let networkManager: NetworkManager
     
@@ -229,16 +220,7 @@ extension TradeManager {
 
    static func routerAddress(chain: Chain, isSafeSwap: Bool) throws -> Address {
         if isSafeSwap {
-            switch chain {
-            case .ethereum, .ethereumGoerli: return try Address(hex: "0x6476008C612dF9F8Db166844fFE39D24aEa12271")
-            case .binanceSmartChain: return try Address(hex: "0x6476008C612dF9F8Db166844fFE39D24aEa12271")
-            case .polygon: return try Address(hex: "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff")
-            case .avalanche: return try Address(hex: "0x60aE616a2155Ee3d9A68541Ba4544862310933d4")
-            case .base: return try Address(hex: "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24")
-            case .SafeFour: return try Address(hex: safeSwapv2Safe4Router)
-            case .SafeFourTestNet: return try Address(hex: safeSwapv2Safe4Router_test)
-            default: throw UnsupportedChainError.noRouterAddress
-            }
+            return try SafeSwapConfig.routerAddress(chain: chain)
         }else {
             switch chain {
             case .ethereum, .ethereumRopsten, .ethereumRinkeby, .ethereumKovan, .ethereumGoerli, .SafeFour, .SafeFourTestNet: return try Address(hex: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
@@ -253,16 +235,7 @@ extension TradeManager {
 
     private static func factoryAddressString(chain: Chain, isSafeSwap: Bool) throws -> String {
         if isSafeSwap {
-            switch chain {
-            case .ethereum, .ethereumGoerli: return "0xB3c827077312163c53E3822defE32cAffE574B42"
-            case .binanceSmartChain: return "0xB3c827077312163c53E3822defE32cAffE574B42"
-            case .polygon: return "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
-            case .avalanche: return "0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10"
-            case .base: return "0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6"
-            case .SafeFour: return safeSwapv2Safe4Factory
-            case .SafeFourTestNet: return safeSwapv2Safe4Factory_test
-            default: throw UnsupportedChainError.noFactoryAddress
-            }
+            return try SafeSwapConfig.factoryAddressString(chain: chain)
         }else {
             switch chain {
             case .ethereum, .ethereumRopsten, .ethereumRinkeby, .ethereumKovan, .ethereumGoerli, .SafeFour, .SafeFourTestNet: return "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
@@ -277,13 +250,7 @@ extension TradeManager {
 
     private static func initCodeHashString(chain: Chain, isSafeSwap: Bool) throws -> String {
         if isSafeSwap {
-            switch chain {
-            case .ethereum, .ethereumGoerli, .polygon, .avalanche, .base: return "0xad0e51aa7a058efb9eb40fd6385473f0175ee7419e8d4f91a4e0294ec12b2d13"
-            case .binanceSmartChain: return "0xad0e51aa7a058efb9eb40fd6385473f0175ee7419e8d4f91a4e0294ec12b2d13"
-            case .SafeFour: return safeSwapv2Safe4CodeHash
-            case .SafeFourTestNet: return safeSwapv2Safe4CodeHash_test
-            default: throw UnsupportedChainError.noInitCodeHash
-            }
+            return try SafeSwapConfig.initCodeHashString(chain: chain)
         }else {
             switch chain {
             case .ethereum, .ethereumRopsten, .ethereumRinkeby, .ethereumKovan, .ethereumGoerli, .base, .SafeFour, .SafeFourTestNet: return "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
@@ -295,8 +262,6 @@ extension TradeManager {
         }
     }
 }
-
-
 
 extension TradeManager {
         
@@ -318,19 +283,38 @@ extension TradeManager {
         let amountAMin = trade.tokenAmountIn.rawAmount.multiplied(by: slippage)/1000
         let amountBMin = trade.tokenAmountOut.rawAmount.multiplied(by: slippage)/1000
         
-        let method: ContractMethod
+        let amountAETHMin = trade.tokenAmountIn.rawAmount.multiplied(by: 5)/1000
+        let amountBETHMin = trade.tokenAmountOut.rawAmount.multiplied(by: 5)/1000
         
+        let method: ContractMethod
+        let isBothErc: Bool
         switch type {
         case .add:
-            method = try buildMethodForAddLiquidity(tokenA: tokenA.address, tokenB: tokenB.address, amountADesired: trade.tokenAmountIn.rawAmount, amountBDesired: trade.tokenAmountOut.rawAmount, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
+            switch tokenA {
+            case .eth:
+                method = try buildMethodForEthAddLiquidity(token: tokenA, amountDesired: trade.tokenAmountIn.rawAmount, amountMin: amountAMin, amountETHMin: amountAETHMin, to: to, deadline: deadline)
+                isBothErc = true
+            case .erc20:
+                if case .eth = tokenB {
+                    method = try buildMethodForEthAddLiquidity(token: tokenB, amountDesired: trade.tokenAmountOut.rawAmount, amountMin: amountBMin, amountETHMin: amountBETHMin, to: to, deadline: deadline)
+                    isBothErc = true
+
+                }else {
+                    method = try buildMethodForAddLiquidity(tokenA: tokenA.address, tokenB: tokenB.address, amountADesired: trade.tokenAmountIn.rawAmount, amountBDesired: trade.tokenAmountOut.rawAmount, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
+                    isBothErc = false
+                }
+            }
+            
         case .remove(let liquidity):
             method = try buildMethodForRemoveLiquidity(tokenA: tokenA.address, tokenB: tokenB.address, liquidity: liquidity, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
+            isBothErc = false
         }
 
         return try TransactionData(
             to: Self.routerAddress(chain: chain, isSafeSwap: isSafeSwap),
             value: trade.tokenAmountIn.rawAmount,
-            input: method.encodedABI()
+            input: method.encodedABI(),
+            isBothErc: isBothErc
         )
     }
     
@@ -340,6 +324,10 @@ extension TradeManager {
     
     private func buildMethodForRemoveLiquidity(tokenA: Address, tokenB: Address, liquidity: BigUInt, amountAMin: BigUInt, amountBMin: BigUInt, to: Address, deadline: BigUInt) throws -> ContractMethod {
         return RemoveLiquidityMethod(tokenA: tokenA, tokenB: tokenB, liquidity: liquidity, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
+    }
+    
+    private func buildMethodForEthAddLiquidity(token: Token, amountDesired: BigUInt, amountMin: BigUInt, amountETHMin: BigUInt, to: Address, deadline: BigUInt) throws -> ContractMethod {
+        return AddLiquidityETHMethod(token: token.address, amountDesired: amountDesired, amountTokenMin: amountMin, amountETHMin: amountETHMin, to: to, deadline: deadline)
     }
 }
 

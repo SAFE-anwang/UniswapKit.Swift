@@ -10,7 +10,7 @@ class SwapContractMethodFactories: ContractMethodFactories {
             RemoveLiquidityMethodFactory(),
             AddLiquidityETHMethodFactory(),
             RemoveLiquidityETHMethodFactory(),
-            // to do ... AddLiquidityETHWithPermit、RemoveLiquidityETHWithPermit
+            RemoveLiquidityWithPermitMethodFactory(),
             SwapETHForExactTokensMethodFactory(),
             SwapExactETHForTokensMethodFactory(),
             SwapExactTokensForETHMethodFactory(),

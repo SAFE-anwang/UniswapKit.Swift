@@ -1,6 +1,7 @@
 import Combine
 import UIExtensions
 import UIKit
+import EvmKit
 
 class TransactionsController: UITableViewController {
     private let limit = 20
@@ -49,8 +50,10 @@ class TransactionsController: UITableViewController {
         }
 
         loading = true
+        let contractAddress = try! Address(hex: "0x61873c9478dEB4Bb2c4d04E86e67c45C09377202")
+        let tagQueries: [TransactionTagQuery] = []// [TransactionTagQuery(type: nil, protocol: .eip20, contractAddress: contractAddress, address: nil)]
 
-        onLoad(transactions: adapter.transactions(from: transactions.last?.transactionHashData, limit: limit))
+        onLoad(transactions: adapter.transactions(from: transactions.last?.transactionHashData, limit: limit, tagQueries: tagQueries))
     }
 
     private func onLoad(transactions: [TransactionRecord]) {

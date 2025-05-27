@@ -41,7 +41,14 @@ class SwapTransactionDecorator {
         )
     }
     
-    private func eip20Token(address: Address, eventInstances: [ContractEventInstance]) -> LiquidityDecoration.Token {
+    private func eip20Token(address: Address, eventInstances: [ContractEventInstance]) -> AddLiquidityDecoration.Token {
+        .eip20Coin(
+                address: address,
+                tokenInfo: eventInstances.compactMap { $0 as? TransferEventInstance }.first { $0.contractAddress == address }?.tokenInfo
+        )
+    }
+    
+    private func eip20Token(address: Address, eventInstances: [ContractEventInstance]) -> RemoveLiquidityDecoration.Token {
         .eip20Coin(
                 address: address,
                 tokenInfo: eventInstances.compactMap { $0 as? TransferEventInstance }.first { $0.contractAddress == address }?.tokenInfo
@@ -181,10 +188,10 @@ extension SwapTransactionDecorator: ITransactionDecorator {
             let totalAmountA = totalTokenAmount(userAddress: method.to, tokenAddress: method.tokenA, eventInstances: eventInstances, collectIncomingAmounts: true)
             let totalAmountB = totalTokenAmount(userAddress: method.to, tokenAddress: method.tokenB, eventInstances: eventInstances, collectIncomingAmounts: true)
 
-            let amountInA: LiquidityDecoration.Amount = totalAmountA != 0 ? .exact(value: totalAmountA) : .extremum(value: method.amountADesired)
-            let amountInB: LiquidityDecoration.Amount = totalAmountB != 0 ? .exact(value: totalAmountB) : .extremum(value: method.amountBDesired)
+            let amountInA: AddLiquidityDecoration.Amount = totalAmountA != 0 ? .exact(value: totalAmountA) : .extremum(value: method.amountADesired)
+            let amountInB: AddLiquidityDecoration.Amount = totalAmountB != 0 ? .exact(value: totalAmountB) : .extremum(value: method.amountBDesired)
 
-            return LiquidityDecoration(contractAddress: to,
+            return AddLiquidityDecoration(contractAddress: to,
                                        amountInA: amountInA,
                                        amountInB: amountInB,
                                        tokenInA: eip20Token(address: method.tokenA, eventInstances: eventInstances),
@@ -193,6 +200,26 @@ extension SwapTransactionDecorator: ITransactionDecorator {
                                        deadline: method.deadline,
                                        internalTransactions: internalTransactions,
                                        eventInstances: eventInstances
+            )
+            
+        case let method as RemoveLiquidityProtocol:
+            guard internalTransactions.count == 0, eventInstances.count == 0 else {
+                return nil
+            }
+            let totalAmountA = totalTokenAmount(userAddress: method.to, tokenAddress: method.tokenA, eventInstances: eventInstances, collectIncomingAmounts: true)
+            let totalAmountB = totalTokenAmount(userAddress: method.to, tokenAddress: method.tokenB, eventInstances: eventInstances, collectIncomingAmounts: true)
+
+            let amountAMin: RemoveLiquidityDecoration.Amount = totalAmountA != 0 ? .exact(value: totalAmountA) : .extremum(value: method.amountAMin)
+            let amountBMin: RemoveLiquidityDecoration.Amount = totalAmountB != 0 ? .exact(value: totalAmountB) : .extremum(value: method.amountBMin)
+            return RemoveLiquidityDecoration(amountAMin: amountAMin,
+                                             amountBMin: amountBMin,
+                                             tokenA: eip20Token(address: method.tokenA, eventInstances: eventInstances),
+                                             tokenB: eip20Token(address: method.tokenB, eventInstances: eventInstances),
+                                             liquidity: method.liquidity,
+                                             to: method.to == from ? nil : method.to,
+                                             deadline: method.deadline,
+                                             internalTransactions: internalTransactions,
+                                             eventInstances: eventInstances
             )
         default: ()
         }

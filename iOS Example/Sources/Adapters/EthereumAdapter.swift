@@ -103,8 +103,8 @@ extension EthereumAdapter {
         evmKit.transactionsPublisher(tagQueries: []).map { _ in () }.eraseToAnyPublisher()
     }
 
-    func transactions(from hash: Data?, limit: Int?) -> [TransactionRecord] {
-        evmKit.transactions(tagQueries: [], fromHash: hash, limit: limit)
+    func transactions(from hash: Data?, limit: Int?, tagQueries: [TransactionTagQuery]) -> [TransactionRecord] {
+        evmKit.transactions(tagQueries: tagQueries, fromHash: hash, limit: limit)
             .map { transaction in
                 transactionRecord(fullTransaction: transaction)
             }

@@ -2,29 +2,28 @@ import EvmKit
 import Eip20Kit
 import BigInt
 
-public class LiquidityDecoration: TransactionDecoration {
-    public let contractAddress: Address
-    public let amountInA: Amount
-    public let amountInB: Amount
-    public let tokenInA: Token
-    public let tokenInB: Token
-    public let recipient: Address?
+public class RemoveLiquidityDecoration: TransactionDecoration {
+    public let tokenA: Token
+    public let tokenB: Token
+    public let liquidity: BigUInt
+    public let amountAMin: Amount
+    public let amountBMin: Amount
+    public let to: Address?
     public let deadline: BigUInt?
     public let internalTransactions: [InternalTransaction]
     public let eventInstances: [ContractEventInstance]
 
-    public init(contractAddress: Address, amountInA: Amount, amountInB: Amount, tokenInA: Token, tokenInB: Token, recipient: Address?, deadline: BigUInt?, internalTransactions: [InternalTransaction],  eventInstances: [ContractEventInstance]) {
-        self.contractAddress = contractAddress
-        self.amountInA = amountInA
-        self.amountInB = amountInB
-        self.tokenInA = tokenInA
-        self.tokenInB = tokenInB
-        self.recipient = recipient
+    public init(amountAMin: Amount, amountBMin: Amount, tokenA: Token, tokenB: Token, liquidity: BigUInt, to: Address?, deadline: BigUInt?, internalTransactions: [InternalTransaction],  eventInstances: [ContractEventInstance]) {
+        self.tokenA = tokenA
+        self.tokenB = tokenB
+        self.amountAMin = amountAMin
+        self.amountBMin = amountBMin
+        self.liquidity = liquidity
+        self.to = to
         self.deadline = deadline
         self.internalTransactions = internalTransactions
         self.eventInstances = eventInstances
-
-
+        
         super.init()
     }
 
@@ -36,24 +35,17 @@ public class LiquidityDecoration: TransactionDecoration {
     }
 
     public override func tags() -> [TransactionTag] {
-        var tags = [
-            tag(token: tokenInA, type: .swap),
-            tag(token: tokenInB, type: .swap),
-//            tag(token: tokenOut, type: .swap),
-            tag(token: tokenInA, type: .outgoing),
-            tag(token: tokenInB, type: .outgoing)
+        let tags = [
+            tag(token: tokenA, type: .incoming),
+            tag(token: tokenB, type: .incoming),
         ]
-
-        if recipient == nil {
-//            tags.append(tag(token: tokenOut, type: .incoming))
-        }
 
         return tags
     }
 
 }
 
-extension LiquidityDecoration {
+extension RemoveLiquidityDecoration {
 
     public enum Amount {
         case exact(value: BigUInt)
@@ -73,4 +65,3 @@ extension LiquidityDecoration {
     }
 
 }
-

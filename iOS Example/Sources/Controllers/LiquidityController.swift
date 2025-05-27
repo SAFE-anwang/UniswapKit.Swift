@@ -12,8 +12,11 @@ class LiquidityController: UIViewController {
     private var swapDataTask: Task<Void, Never>?
 
 //    private var tradeOptions = TradeOptions(allowedSlippage: 0.5)
-    private var fromToken = Configuration.shared.erc20Tokens[5]
-    private var toToken = Configuration.shared.erc20Tokens[4]
+//    private var fromToken = Configuration.shared.erc20Tokens[5]
+//    private var toToken = Configuration.shared.erc20Tokens[4]
+    
+    private var fromToken = Configuration.shared.erc20Tokens[0]
+    private var toToken = Configuration.shared.erc20Tokens[1]
     private var tradeType: TradeType = .exactIn {
         didSet {
             syncCoinLabels()
