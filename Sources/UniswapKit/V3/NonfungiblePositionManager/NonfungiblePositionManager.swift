@@ -183,7 +183,7 @@ extension NonfungiblePositionManager {
 
         let resultMethod = (methods.count > 1) ? MulticallMethod(methods: methods) : swapMethod
         let contractAddress = dexType.nonfungiblePositionAddress(chain: chain)
-        return TransactionData(to: contractAddress, value: 0, input: resultMethod.encodedABI_fix())
+        return TransactionData(to: contractAddress, value: 0, input: resultMethod.encodedABI())
     }
     
     func removeLiquidityTransactionData(
