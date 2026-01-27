@@ -2,7 +2,7 @@ import EvmKit
 import Eip20Kit
 import BigInt
 
-public class AddLiquidityDecoration: TransactionDecoration {
+public class LiquidityDecoration: TransactionDecoration {
     public let contractAddress: Address
     public let amountInA: Amount
     public let amountInB: Amount
@@ -46,7 +46,7 @@ public class AddLiquidityDecoration: TransactionDecoration {
 
 }
 
-extension AddLiquidityDecoration {
+extension LiquidityDecoration {
 
     public enum Amount {
         case exact(value: BigUInt)
