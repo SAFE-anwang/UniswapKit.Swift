@@ -41,7 +41,7 @@ class SwapTransactionDecorator {
         )
     }
     
-    private func eip20Token(address: Address, eventInstances: [ContractEventInstance]) -> AddLiquidityDecoration.Token {
+    private func eip20Token(address: Address, eventInstances: [ContractEventInstance]) -> LiquidityDecoration.Token {
         .eip20Coin(
                 address: address,
                 tokenInfo: eventInstances.compactMap { $0 as? TransferEventInstance }.first { $0.contractAddress == address }?.tokenInfo
@@ -188,10 +188,10 @@ extension SwapTransactionDecorator: ITransactionDecorator {
             let totalAmountA = totalTokenAmount(userAddress: method.to, tokenAddress: method.tokenA, eventInstances: eventInstances, collectIncomingAmounts: true)
             let totalAmountB = totalTokenAmount(userAddress: method.to, tokenAddress: method.tokenB, eventInstances: eventInstances, collectIncomingAmounts: true)
 
-            let amountInA: AddLiquidityDecoration.Amount = totalAmountA != 0 ? .exact(value: totalAmountA) : .extremum(value: method.amountADesired)
-            let amountInB: AddLiquidityDecoration.Amount = totalAmountB != 0 ? .exact(value: totalAmountB) : .extremum(value: method.amountBDesired)
+            let amountInA: LiquidityDecoration.Amount = totalAmountA != 0 ? .exact(value: totalAmountA) : .extremum(value: method.amountADesired)
+            let amountInB: LiquidityDecoration.Amount = totalAmountB != 0 ? .exact(value: totalAmountB) : .extremum(value: method.amountBDesired)
 
-            return AddLiquidityDecoration(contractAddress: to,
+            return LiquidityDecoration(contractAddress: to,
                                        amountInA: amountInA,
                                        amountInB: amountInB,
                                        tokenInA: eip20Token(address: method.tokenA, eventInstances: eventInstances),
