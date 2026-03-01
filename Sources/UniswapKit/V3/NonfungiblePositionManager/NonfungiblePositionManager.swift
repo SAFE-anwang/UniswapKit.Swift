@@ -172,6 +172,14 @@ extension NonfungiblePositionManager {
         let tickUpper = tickInfo.tickUpper
         
         let swapMethod = try await buildMethodForExact(tradeData: tradeData, tickLower: tickLower, tickUpper: tickUpper, recipient: recipient, rpcSource: rpcSource, chain: chain, deadline: deadline)
+        methods.append(swapMethod)
+
+        let ethValue: BigUInt
+        if tradeData.trade.tokenAmountIn.token.isEther {
+            ethValue = tradeData.type == .exactOut ? tradeData.tokenAmountInMax.rawAmount : tradeData.trade.tokenAmountIn.rawAmount
+        } else {
+            ethValue = 0
+        }
         
         if tradeData.trade.tokenAmountIn.token.isEther, tradeData.type == .exactOut {
             methods.append(RefundEthMethod())
@@ -181,9 +189,9 @@ extension NonfungiblePositionManager {
             methods.append(UnwrapWeth9Method(amountMinimum: tradeData.tokenAmountOutMin.rawAmount, recipient: recipient))
         }
 
-        let resultMethod = (methods.count > 1) ? MulticallMethod(methods: methods) : swapMethod
+        let resultMethod = (methods.count > 1) ? MulticallMethod(methods: methods) : methods[0]
         let contractAddress = dexType.nonfungiblePositionAddress(chain: chain)
-        return TransactionData(to: contractAddress, value: 0, input: resultMethod.encodedABI_fix())
+        return TransactionData(to: contractAddress, value: ethValue, input: resultMethod.encodedABI_fix())
     }
     
     func removeLiquidityTransactionData(
@@ -193,7 +201,8 @@ extension NonfungiblePositionManager {
             liquidity: BigUInt,
             slippage: BigUInt,
             recipient: Address,
-            deadline: BigUInt
+            deadline: BigUInt,
+            unwrapEther: Bool = false
     ) async throws -> TransactionData {
            
         let (amount0, amount1, _) = try await getAmountsForLiquidity(positions: positions, rpcSource: rpcSource, chain: chain, liquidity: liquidity)
@@ -202,18 +211,32 @@ extension NonfungiblePositionManager {
         let amount1Min = amount1 - amount1.multiplied(by: slippage)/1000
         
         var methods = [ContractMethod]()
+        let contractRecipient = try Address(hex: "0x0000000000000000000000000000000000000002")
+        let wethAddress = try TokenFactory().etherToken(chain: chain).address
+        let useUnwrapEther = unwrapEther && (positions.token0 == wethAddress || positions.token1 == wethAddress)
+        let collectRecipient = useUnwrapEther ? contractRecipient : recipient
         
         let decreaseMethod = DecreaseLiquidityMethod(tokenId: positions.tokenId, liquidity: liquidity, amount0Min: amount0Min, amount1Min: amount1Min, deadline: deadline)
         methods.append(decreaseMethod)
         
         let amount0Max: BigUInt = BigUInt(2).power(128) - 1
         let amount1Max: BigUInt = BigUInt(2).power(128) - 1
-        let collectMethod = CollectMethod(tokenId: positions.tokenId, recipient: recipient, amount0Max: amount0Max, amount1Max: amount1Max)
+        let collectMethod = CollectMethod(tokenId: positions.tokenId, recipient: collectRecipient, amount0Max: amount0Max, amount1Max: amount1Max)
         methods.append(collectMethod)
+
+        if useUnwrapEther {
+            if positions.token0 == wethAddress {
+                methods.append(UnwrapWeth9Method(amountMinimum: amount0Min, recipient: recipient))
+                methods.append(SweepTokenMethod(token: positions.token1, amountMinimum: amount1Min, recipient: recipient))
+            } else {
+                methods.append(UnwrapWeth9Method(amountMinimum: amount1Min, recipient: recipient))
+                methods.append(SweepTokenMethod(token: positions.token0, amountMinimum: amount0Min, recipient: recipient))
+            }
+        }
         
         let resultMethod =  (methods.count > 1) ? MulticallMethod(methods: methods) : decreaseMethod
         let contractAddress = dexType.nonfungiblePositionAddress(chain: chain)
-        return TransactionData(to: contractAddress, value: 0, input: resultMethod.encodedABI())
+        return TransactionData(to: contractAddress, value: 0, input: resultMethod.encodedABI_fix())
     }
 }
 extension NonfungiblePositionManager {

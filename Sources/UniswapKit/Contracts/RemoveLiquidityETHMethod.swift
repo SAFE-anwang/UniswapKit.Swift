@@ -2,7 +2,7 @@ import EvmKit
 import BigInt
 
 class RemoveLiquidityETHMethod: ContractMethod {
-    static let methodSignature = "removeLiquidity(address,uint256,uint256,uint256,address,uint256)"
+    static let methodSignature = "removeLiquidityETH(address,uint256,uint256,uint256,address,uint256)"
 
     let token: Address
     let liquidity: BigUInt
@@ -22,7 +22,7 @@ class RemoveLiquidityETHMethod: ContractMethod {
         super.init()
     }
 
-    override var methodSignature: String { RemoveLiquidityMethod.methodSignature }
+    override var methodSignature: String { RemoveLiquidityETHMethod.methodSignature }
 
     override var arguments: [Any] {
         [token, liquidity, amountTokenMin, amountETHMin, to, deadline]

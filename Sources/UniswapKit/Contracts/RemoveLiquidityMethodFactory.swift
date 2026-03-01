@@ -34,10 +34,10 @@ class RemoveLiquidityWithPermitMethodFactory: IContractMethodFactory {
               let amountBMin = parsedArguments[4] as? BigUInt,
               let to = parsedArguments[5] as? Address,
               let deadline = parsedArguments[6] as? BigUInt,
-              let approveMax = parsedArguments[6] as? String,
-              let v = parsedArguments[7] as? BigUInt,
-              let r = parsedArguments[8] as? BigUInt,
-              let s = parsedArguments[9] as? BigUInt else {
+              let approveMax = parsedArguments[7] as? String,
+              let v = parsedArguments[8] as? BigUInt,
+              let r = parsedArguments[9] as? BigUInt,
+              let s = parsedArguments[10] as? BigUInt else {
             throw ContractMethodFactories.DecodeError.invalidABI
         }
 
@@ -45,4 +45,3 @@ class RemoveLiquidityWithPermitMethodFactory: IContractMethodFactory {
     }
 
 }
-

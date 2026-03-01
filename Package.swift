@@ -30,5 +30,13 @@ let package = Package(
                 .product(name: "HsExtensions", package: "HsExtensions.Swift"),
             ]
         ),
+        .testTarget(
+            name: "UniswapKitTests",
+            dependencies: [
+                "UniswapKit",
+                "BigInt",
+                .product(name: "EvmKit", package: "EvmKit.Swift"),
+            ]
+        ),
     ]
 )

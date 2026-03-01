@@ -55,13 +55,23 @@ public class ContractMethodHelper_fix {
                 arraysData += encode(data32Array: argument.map(\.raw))
             case let argument as Data:
                 data += prePad(data32: BigUInt(arguments.count * 32 + arraysData.count).serialize())
-                arraysData += prePad(data32: BigUInt(argument.count).serialize()) + argument
+                arraysData += prePad(data32: BigUInt(argument.count).serialize()) + postPad(data: argument)
             case let argument as DynamicStructParameter:
                 data += prePad(data32: BigUInt(arguments.count * 32 + arraysData.count).serialize())
                 arraysData += encodedABI(methodId: Data(), arguments: argument.arguments)
+            case let argument as ContractMethodHelper.DynamicStructParameter:
+                if let dynamicArguments: [Any] = extractChildValue(argument, type: [Any].self) {
+                    data += prePad(data32: BigUInt(arguments.count * 32 + arraysData.count).serialize())
+                    arraysData += encodedABI(methodId: Data(), arguments: dynamicArguments)
+                }
             case let argument as MulticallParameters:
                 data += prePad(data32: BigUInt(arguments.count * 32 + arraysData.count).serialize())
                 arraysData += encode(dataArray: argument.arguments.compactMap { $0 as? Data })
+            case let argument as ContractMethodHelper.MulticallParameters:
+                if let dataArray: [Data] = extractChildValue(argument, type: [Data].self) {
+                    data += prePad(data32: BigUInt(arguments.count * 32 + arraysData.count).serialize())
+                    arraysData += encode(dataArray: dataArray)
+                }
             default:
                 ()
             }
@@ -261,5 +271,8 @@ public class ContractMethodHelper_fix {
 
         return data + Data(repeating: 0, count: max(0, 32 - data.count % 32))
     }
-}
 
+    private static func extractChildValue<T>(_ object: Any, type: T.Type) -> T? {
+        Mirror(reflecting: object).children.compactMap { $0.value as? T }.first
+    }
+}

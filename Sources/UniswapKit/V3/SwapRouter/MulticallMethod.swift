@@ -14,6 +14,6 @@ class MulticallMethod: ContractMethod {
     override var methodSignature: String { MulticallMethod.methodSignature }
 
     override var arguments: [Any] {
-        [ContractMethodHelper.MulticallParameters(methods.map { $0.encodedABI() })]
+        [ContractMethodHelper_fix.MulticallParameters(methods.map { $0.encodedABI_fix() })]
     }
 }

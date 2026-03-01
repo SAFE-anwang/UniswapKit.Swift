@@ -70,7 +70,7 @@ extension SwapRouter {
 
         // if you try to swap erc20 -> ETH, recipient will be zeros.
         let swapRecipient = tradeData.trade.tokenAmountOut.token.isEther ? (try! Address(hex: "0x0000000000000000000000000000000000000002")) : recipient
-        let ethValue = tradeData.trade.tokenAmountIn.token.isEther ? tradeData.trade.tokenAmountIn.rawAmount : 0
+        let ethValue = tradeData.trade.tokenAmountIn.token.isEther ? (tradeData.type == .exactOut ? tradeData.tokenAmountInMax.rawAmount : tradeData.trade.tokenAmountIn.rawAmount) : 0
 
         let swapMethod = buildMethodForExact(
             tradeData: tradeData,
@@ -89,6 +89,6 @@ extension SwapRouter {
 
         let resultMethod = (methods.count > 1) ? MulticallMethod(methods: methods) : swapMethod
 
-        return TransactionData(to: dexType.routerAddress(chain: chain), value: ethValue, input: resultMethod.encodedABI())
+        return TransactionData(to: dexType.routerAddress(chain: chain), value: ethValue, input: resultMethod.encodedABI_fix())
     }
 }

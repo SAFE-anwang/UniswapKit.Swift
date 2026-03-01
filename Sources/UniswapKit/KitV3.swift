@@ -178,8 +178,8 @@ public extension KitV3 {
         return try await nonfungiblePositionManager.addLiquidityTransactionData(tradeData: bestTrade, tradeOptions: tradeOptions, recipient: recipient, rpcSource: rpcSource, chain: chain, deadline: deadline)
     }
     
-    func removeLiquidityTransactionData(positions: Positions, rpcSource: RpcSource, chain: Chain, liquidity: BigUInt, slippage: BigUInt, recipient: Address, deadline: BigUInt) async throws -> TransactionData {
-        try await nonfungiblePositionManager.removeLiquidityTransactionData(positions: positions, rpcSource: rpcSource, chain: chain, liquidity: liquidity, slippage: slippage, recipient: recipient, deadline: deadline)
+    func removeLiquidityTransactionData(positions: Positions, rpcSource: RpcSource, chain: Chain, liquidity: BigUInt, slippage: BigUInt, recipient: Address, deadline: BigUInt, unwrapEther: Bool = false) async throws -> TransactionData {
+        try await nonfungiblePositionManager.removeLiquidityTransactionData(positions: positions, rpcSource: rpcSource, chain: chain, liquidity: liquidity, slippage: slippage, recipient: recipient, deadline: deadline, unwrapEther: unwrapEther)
     }
     
     var minTick: BigInt {
@@ -226,4 +226,3 @@ public extension KitV3 {
     }
 
 }
-

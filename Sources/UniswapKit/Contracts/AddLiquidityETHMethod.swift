@@ -23,7 +23,7 @@ class AddLiquidityETHMethod: ContractMethod {
         super.init()
     }
 
-    override var methodSignature: String { AddLiquidityMethod.methodSignature }
+    override var methodSignature: String { AddLiquidityETHMethod.methodSignature }
 
     override var arguments: [Any] {
         [token, amountDesired, amountTokenMin, amountETHMin, to, deadline]

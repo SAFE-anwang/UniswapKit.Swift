@@ -277,42 +277,111 @@ extension TradeManager {
 
         let to = tradeData.options.recipient ?? recipient
         let deadline = BigUInt(Date().timeIntervalSince1970 + tradeData.options.ttl)
-        
+
         let slippage: BigUInt = (tokenA.address.hex == "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c" || tokenB.address.hex == "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c") ? 25 : 5
-        
-        let amountAMin = trade.tokenAmountIn.rawAmount.multiplied(by: slippage)/1000
-        let amountBMin = trade.tokenAmountOut.rawAmount.multiplied(by: slippage)/1000
-        
-        let amountAETHMin = trade.tokenAmountIn.rawAmount.multiplied(by: 5)/1000
-        let amountBETHMin = trade.tokenAmountOut.rawAmount.multiplied(by: 5)/1000
+        let hardcodedSlippageFraction = Fraction(numerator: slippage, denominator: 1000)
+        let slippageFraction = max(tradeData.options.slippageFraction, hardcodedSlippageFraction)
+
+        func amountMin(rawAmount: BigUInt) -> BigUInt {
+            let one = Fraction(numerator: 1)
+            let slippage = min(slippageFraction, one)
+            let factor = one - slippage
+            return (factor * Fraction(numerator: rawAmount)).quotient
+        }
         
         let method: ContractMethod
         let isBothErc: Bool
+        let value: BigUInt
         switch type {
         case .add:
             switch tokenA {
             case .eth:
-                method = try buildMethodForEthAddLiquidity(token: tokenA, amountDesired: trade.tokenAmountIn.rawAmount, amountMin: amountAMin, amountETHMin: amountAETHMin, to: to, deadline: deadline)
-                isBothErc = true
+                let ethAmountDesired = trade.tokenAmountIn.rawAmount
+                let tokenAmountDesired = trade.tokenAmountOut.rawAmount
+                method = try buildMethodForEthAddLiquidity(
+                    token: tokenB,
+                    amountDesired: tokenAmountDesired,
+                    amountMin: amountMin(rawAmount: tokenAmountDesired),
+                    amountETHMin: amountMin(rawAmount: ethAmountDesired),
+                    to: to,
+                    deadline: deadline
+                )
+                isBothErc = false
+                value = ethAmountDesired
             case .erc20:
                 if case .eth = tokenB {
-                    method = try buildMethodForEthAddLiquidity(token: tokenB, amountDesired: trade.tokenAmountOut.rawAmount, amountMin: amountBMin, amountETHMin: amountBETHMin, to: to, deadline: deadline)
-                    isBothErc = true
-
-                }else {
-                    method = try buildMethodForAddLiquidity(tokenA: tokenA.address, tokenB: tokenB.address, amountADesired: trade.tokenAmountIn.rawAmount, amountBDesired: trade.tokenAmountOut.rawAmount, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
+                    let tokenAmountDesired = trade.tokenAmountIn.rawAmount
+                    let ethAmountDesired = trade.tokenAmountOut.rawAmount
+                    method = try buildMethodForEthAddLiquidity(
+                        token: tokenA,
+                        amountDesired: tokenAmountDesired,
+                        amountMin: amountMin(rawAmount: tokenAmountDesired),
+                        amountETHMin: amountMin(rawAmount: ethAmountDesired),
+                        to: to,
+                        deadline: deadline
+                    )
                     isBothErc = false
+                    value = ethAmountDesired
+                }else {
+                    let amountADesired = trade.tokenAmountIn.rawAmount
+                    let amountBDesired = trade.tokenAmountOut.rawAmount
+                    method = try buildMethodForAddLiquidity(
+                        tokenA: tokenA.address,
+                        tokenB: tokenB.address,
+                        amountADesired: amountADesired,
+                        amountBDesired: amountBDesired,
+                        amountAMin: amountMin(rawAmount: amountADesired),
+                        amountBMin: amountMin(rawAmount: amountBDesired),
+                        to: to,
+                        deadline: deadline
+                    )
+                    isBothErc = true
+                    value = 0
                 }
             }
             
         case .remove(let liquidity):
-            method = try buildMethodForRemoveLiquidity(tokenA: tokenA.address, tokenB: tokenB.address, liquidity: liquidity, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
-            isBothErc = false
+            let amountAExpected = trade.tokenAmountIn.rawAmount
+            let amountBExpected = trade.tokenAmountOut.rawAmount
+
+            if tokenA.isEther {
+                method = try buildMethodForRemoveLiquidityETH(
+                    token: tokenB.address,
+                    liquidity: liquidity,
+                    amountTokenMin: amountMin(rawAmount: amountBExpected),
+                    amountETHMin: amountMin(rawAmount: amountAExpected),
+                    to: to,
+                    deadline: deadline
+                )
+                isBothErc = false
+            } else if tokenB.isEther {
+                method = try buildMethodForRemoveLiquidityETH(
+                    token: tokenA.address,
+                    liquidity: liquidity,
+                    amountTokenMin: amountMin(rawAmount: amountAExpected),
+                    amountETHMin: amountMin(rawAmount: amountBExpected),
+                    to: to,
+                    deadline: deadline
+                )
+                isBothErc = false
+            } else {
+                method = try buildMethodForRemoveLiquidity(
+                    tokenA: tokenA.address,
+                    tokenB: tokenB.address,
+                    liquidity: liquidity,
+                    amountAMin: amountMin(rawAmount: amountAExpected),
+                    amountBMin: amountMin(rawAmount: amountBExpected),
+                    to: to,
+                    deadline: deadline
+                )
+                isBothErc = true
+            }
+            value = 0
         }
 
         return try TransactionData(
             to: Self.routerAddress(chain: chain, isSafeSwap: isSafeSwap),
-            value: trade.tokenAmountIn.rawAmount,
+            value: value,
             input: method.encodedABI(),
             isBothErc: isBothErc
         )
@@ -324,6 +393,10 @@ extension TradeManager {
     
     private func buildMethodForRemoveLiquidity(tokenA: Address, tokenB: Address, liquidity: BigUInt, amountAMin: BigUInt, amountBMin: BigUInt, to: Address, deadline: BigUInt) throws -> ContractMethod {
         return RemoveLiquidityMethod(tokenA: tokenA, tokenB: tokenB, liquidity: liquidity, amountAMin: amountAMin, amountBMin: amountBMin, to: to, deadline: deadline)
+    }
+
+    private func buildMethodForRemoveLiquidityETH(token: Address, liquidity: BigUInt, amountTokenMin: BigUInt, amountETHMin: BigUInt, to: Address, deadline: BigUInt) throws -> ContractMethod {
+        return RemoveLiquidityETHMethod(token: token, liquidity: liquidity, amountTokenMin: amountTokenMin, amountETHMin: amountETHMin, to: to, deadline: deadline)
     }
     
     private func buildMethodForEthAddLiquidity(token: Token, amountDesired: BigUInt, amountMin: BigUInt, amountETHMin: BigUInt, to: Address, deadline: BigUInt) throws -> ContractMethod {

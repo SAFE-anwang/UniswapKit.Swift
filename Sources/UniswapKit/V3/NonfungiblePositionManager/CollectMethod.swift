@@ -14,6 +14,7 @@ class CollectMethod: ContractMethod {
         self.recipient = recipient
         self.amount0Max = amount0Max
         self.amount1Max = amount1Max
+        super.init()
     }
 
     override var methodSignature: String {
