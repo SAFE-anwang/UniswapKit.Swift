@@ -167,7 +167,7 @@ public class QuoterV2 {
         let amountIn = try await quote(rpcSource: rpcSource, chain: chain, swapPath: path, tradeType: .exactOut, amount: amountOut)
 
         let slotPrices = [trade1.slotPrices.first, trade2.slotPrices.first].compactMap { $0 }
-        return TradeV3(tradeType: .exactIn, swapPath: path, amountIn: amountIn, amountOut: amountOut, tokenIn: tokenIn, tokenOut: tokenOut, slotPrices: slotPrices)
+        return TradeV3(tradeType: .exactOut, swapPath: path, amountIn: amountIn, amountOut: amountOut, tokenIn: tokenIn, tokenOut: tokenOut, slotPrices: slotPrices)
     }
 
     func bestTrade(rpcSource: RpcSource, chain: Chain, tradeType: TradeType, tokenIn: Token, tokenOut: Token, amount: BigUInt) async throws -> TradeV3 {
@@ -248,7 +248,16 @@ extension QuoterV2 {
                                     tickSpacing: tickSpacing,
                                     slot0: slot0
             )
-            return TradeV3(tradeType: .exactIn, swapPath: swapPath, amountIn: amountIn, amountOut: bestTradeOut.response.amount, tokenIn: tokenIn, tokenOut: tokenOut, slotPrices: slotPrice.map { [$0] } ?? [], tickInfo: tickInfo)
+            let (amount0, amount1) = try calculateLiquidityAmounts(
+                tokenIn: tokenIn,
+                tokenOut: tokenOut,
+                amountIn: amountIn,
+                currentTick: currentTick,
+                tickLower: lower,
+                tickUpper: upper,
+                sqrtPriceX96: sqrtPriceX96
+            )
+            return TradeV3(tradeType: .exactIn, swapPath: swapPath, amountIn: amount0, amountOut: amount1, tokenIn: tokenIn, tokenOut: tokenOut, slotPrices: slotPrice.map { [$0] } ?? [], tickInfo: tickInfo)
             
         case let .multi(value):
             let multiTick = currentTick * BigInt("\(value * 100)")! / 100
@@ -263,43 +272,29 @@ extension QuoterV2 {
         let nearestUsableLowerTick = try TickMath.nearestUsableTick(tick: lower, tickSpacing: tickSpacing)
         let nearestUsableUpperTick = try TickMath.nearestUsableTick(tick: upper, tickSpacing: tickSpacing)
         
-        let (tick0,tick1) = tokenIn.sortsBefore(token: tokenOut) ? (nearestUsableLowerTick,nearestUsableUpperTick) : (nearestUsableUpperTick,nearestUsableLowerTick)
-        
-        let tickLowerSqrtPriceX96 = try TickMath.getSqrtRatioAtTick(tick: tick0)
+        let tickLowerSqrtPriceX96 = try TickMath.getSqrtRatioAtTick(tick: nearestUsableLowerTick)
         let tickLowerPrice = correctedX96Price(
             sqrtPriceX96: tickLowerSqrtPriceX96,
             tokenIn: tokenIn,
             tokenOut: tokenOut
         )
         
-        let tickUpperSqrtPriceX96 = try TickMath.getSqrtRatioAtTick(tick: tick1)
+        let tickUpperSqrtPriceX96 = try TickMath.getSqrtRatioAtTick(tick: nearestUsableUpperTick)
         let tickUpperPrice = correctedX96Price(
             sqrtPriceX96: tickUpperSqrtPriceX96,
             tokenIn: tokenIn,
             tokenOut: tokenOut
         )
         
-        let amount0 = nearestUsableLowerTick < currentTick ? amountIn : 0
-        var amount1: BigUInt = 0
-        
-        if tokenIn.sortsBefore(token: tokenOut) {
-            guard let liquidity = LiquidityAmounts.getLiquidityForAmount0(sqrtRatioAX96: sqrtPriceX96, sqrtRatioBX96: tickUpperSqrtPriceX96, amount0: amountIn) else {
-                throw LiquidityTradeError.getLiquidityForAmount0Error
-            }
-            guard let amountOut = LiquidityAmounts.getAmount1ForLiquidity(sqrtRatioAX96: tickLowerSqrtPriceX96, sqrtRatioBX96: sqrtPriceX96, liquidity: liquidity) else {
-                throw LiquidityTradeError.getAmount1ForLiquidityError
-            }
-            amount1 = currentTick < nearestUsableUpperTick ? amountOut : 0
-            
-        } else {
-            guard let liquidity = LiquidityAmounts.getLiquidityForAmount1(sqrtRatioAX96: sqrtPriceX96, sqrtRatioBX96: tickUpperSqrtPriceX96, amount1: amountIn) else {
-                throw LiquidityTradeError.getLiquidityForAmount0Error
-            }
-            guard let amountOut = LiquidityAmounts.getAmount0ForLiquidity(sqrtRatioAX96: tickLowerSqrtPriceX96, sqrtRatioBX96: sqrtPriceX96, liquidity: liquidity) else {
-                throw LiquidityTradeError.getAmount1ForLiquidityError
-            }
-            amount1 = currentTick < nearestUsableUpperTick ? amountOut : 0
-        }
+        let (amount0, amount1) = try calculateLiquidityAmounts(
+            tokenIn: tokenIn,
+            tokenOut: tokenOut,
+            amountIn: amountIn,
+            currentTick: currentTick,
+            tickLower: nearestUsableLowerTick,
+            tickUpper: nearestUsableUpperTick,
+            sqrtPriceX96: sqrtPriceX96
+        )
 
         let tickInfo = TickInfo(tickLower: nearestUsableLowerTick,
                                 tickUpper: nearestUsableUpperTick,
@@ -313,6 +308,80 @@ extension QuoterV2 {
         )
         
         return TradeV3(tradeType: .exactIn, swapPath: swapPath, amountIn: amount0, amountOut: amount1, tokenIn: tokenIn, tokenOut: tokenOut, slotPrices: slotPrice.map { [$0] } ?? [], tickInfo: tickInfo)
+    }
+    
+    private func calculateLiquidityAmounts(
+        tokenIn: Token,
+        tokenOut: Token,
+        amountIn: BigUInt,
+        currentTick: BigInt,
+        tickLower: BigInt,
+        tickUpper: BigInt,
+        sqrtPriceX96: BigUInt
+    ) throws -> (BigUInt, BigUInt) {
+        let (token0, token1) = tokenIn.sortsBefore(token: tokenOut) ? (tokenIn, tokenOut) : (tokenOut, tokenIn)
+        let isTokenInToken0 = tokenIn.address == token0.address
+        
+        let tickLowerSqrtPriceX96 = try TickMath.getSqrtRatioAtTick(tick: tickLower)
+        let tickUpperSqrtPriceX96 = try TickMath.getSqrtRatioAtTick(tick: tickUpper)
+        
+        let liquidity: BigUInt
+        if isTokenInToken0 {
+            if currentTick <= tickLower {
+                guard let liq = LiquidityAmounts.getLiquidityForAmount0(
+                    sqrtRatioAX96: tickLowerSqrtPriceX96,
+                    sqrtRatioBX96: tickUpperSqrtPriceX96,
+                    amount0: amountIn
+                ) else {
+                    throw LiquidityTradeError.getLiquidityForAmount0Error
+                }
+                liquidity = liq
+            } else if currentTick < tickUpper {
+                guard let liq = LiquidityAmounts.getLiquidityForAmount0(
+                    sqrtRatioAX96: sqrtPriceX96,
+                    sqrtRatioBX96: tickUpperSqrtPriceX96,
+                    amount0: amountIn
+                ) else {
+                    throw LiquidityTradeError.getLiquidityForAmount0Error
+                }
+                liquidity = liq
+            } else {
+                throw LiquidityTradeError.getLiquidityForAmount0Error
+            }
+        } else {
+            if currentTick < tickLower {
+                throw LiquidityTradeError.getLiquidityForAmount0Error
+            } else if currentTick < tickUpper {
+                guard let liq = LiquidityAmounts.getLiquidityForAmount1(
+                    sqrtRatioAX96: tickLowerSqrtPriceX96,
+                    sqrtRatioBX96: sqrtPriceX96,
+                    amount1: amountIn
+                ) else {
+                    throw LiquidityTradeError.getLiquidityForAmount0Error
+                }
+                liquidity = liq
+            } else {
+                guard let liq = LiquidityAmounts.getLiquidityForAmount1(
+                    sqrtRatioAX96: tickLowerSqrtPriceX96,
+                    sqrtRatioBX96: tickUpperSqrtPriceX96,
+                    amount1: amountIn
+                ) else {
+                    throw LiquidityTradeError.getLiquidityForAmount0Error
+                }
+                liquidity = liq
+            }
+        }
+        
+        guard let (amount0, amount1) = LiquidityAmounts.getAmountsForLiquidity(
+            liquidity: liquidity,
+            sqrtRatioX96: sqrtPriceX96,
+            sqrtRatioAX96: tickLowerSqrtPriceX96,
+            sqrtRatioBX96: tickUpperSqrtPriceX96
+        ) else {
+            throw LiquidityTradeError.getAmount1ForLiquidityError
+        }
+        
+        return (amount0, amount1)
     }
     
     enum LiquidityTradeError: Error {
