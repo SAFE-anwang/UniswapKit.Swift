@@ -173,6 +173,61 @@ public extension KitV3 {
         let trade = try await quoter.liquidityBestTradeSingle(rpcSource: rpcSource, chain: chain, tokenIn: tokenIn, tokenOut: tokenOut, amountIn: amountIn, tickType: tickType)
         return TradeDataV3(trade: trade, options: options)
     }
+
+    func liquidityBestTradeMultihopExact(rpcSource: RpcSource, chain: Chain, tokenIn: Token, tokenOut: Token, amountIn: Decimal, options: TradeOptions, tickType: KitV3.LiquidityTickType) async throws -> TradeDataV3 {
+
+        guard let amountIn = BigUInt(amountIn.hs.roundedString(decimal: tokenIn.decimals)), !amountIn.isZero else {
+            throw TradeError.zeroAmount
+        }
+        let trade = try await quoter.liquidityBestTradeMultihop(rpcSource: rpcSource, chain: chain, tokenIn: tokenIn, tokenOut: tokenOut, amountIn: amountIn, tickType: tickType)
+        return TradeDataV3(trade: trade, options: options)
+    }
+
+    func addLiquidity(
+        rpcSource: RpcSource,
+        chain: Chain,
+        tokenIn: Token,
+        tokenOut: Token,
+        amountIn: Decimal,
+        tradeOptions: TradeOptions,
+        tickType: KitV3.LiquidityTickType,
+        recipient: Address,
+        deadline: BigUInt,
+        isMultihop: Bool = false
+    ) async throws -> TransactionData {
+        let tradeData: TradeDataV3
+
+        if isMultihop {
+            tradeData = try await liquidityBestTradeMultihopExact(
+                rpcSource: rpcSource,
+                chain: chain,
+                tokenIn: tokenIn,
+                tokenOut: tokenOut,
+                amountIn: amountIn,
+                options: tradeOptions,
+                tickType: tickType
+            )
+        } else {
+            tradeData = try await liquidityBestTradeExact(
+                rpcSource: rpcSource,
+                chain: chain,
+                tokenIn: tokenIn,
+                tokenOut: tokenOut,
+                amountIn: amountIn,
+                options: tradeOptions,
+                tickType: tickType
+            )
+        }
+
+        return try await addLiquidityTransactionData(
+            bestTrade: tradeData,
+            tradeOptions: tradeOptions,
+            recipient: recipient,
+            rpcSource: rpcSource,
+            chain: chain,
+            deadline: deadline
+        )
+    }
     
     func addLiquidityTransactionData(bestTrade: TradeDataV3, tradeOptions: TradeOptions, recipient: Address, rpcSource: RpcSource, chain: Chain, deadline: BigUInt) async throws -> TransactionData {
         return try await nonfungiblePositionManager.addLiquidityTransactionData(tradeData: bestTrade, tradeOptions: tradeOptions, recipient: recipient, rpcSource: rpcSource, chain: chain, deadline: deadline)

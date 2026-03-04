@@ -309,7 +309,114 @@ extension QuoterV2 {
         
         return TradeV3(tradeType: .exactIn, swapPath: swapPath, amountIn: amount0, amountOut: amount1, tokenIn: tokenIn, tokenOut: tokenOut, slotPrices: slotPrice.map { [$0] } ?? [], tickInfo: tickInfo)
     }
-    
+
+    func liquidityBestTradeMultihop(rpcSource: RpcSource, chain: Chain, tokenIn: Token, tokenOut: Token, amountIn: BigUInt, tickType: KitV3.LiquidityTickType) async throws -> TradeV3 {
+        let weth = try tokenFactory.etherToken(chain: chain)
+
+        guard tokenIn != weth && tokenOut != weth else {
+            throw LiquidityTradeError.invalidTokenPair
+        }
+
+        let bestTradeOut = try await bestTradeExact(rpcSource: rpcSource, chain: chain, tradeType: .exactIn, tokenIn: tokenIn, tokenOut: weth, amount: amountIn)
+        let bestTradeOut2 = try await bestTradeExact(rpcSource: rpcSource, chain: chain, tradeType: .exactIn, tokenIn: weth, tokenOut: tokenOut, amount: bestTradeOut.response.amount)
+
+        let tickSpacing = KitV3.TickSpacing.tickSpacing(fee: bestTradeOut.fee).rawValue
+
+        let pool = try await Pool(networkManager: networkManager, rpcSource: rpcSource, chain: chain, token0: tokenIn.address, token1: tokenOut.address, fee: bestTradeOut.fee, dexType: dexType)
+
+        let slot0 = try await pool.slot0()
+        let sqrtPriceX96 = slot0.sqrtPriceX96
+        let currentTick = slot0.tick
+        let slotPrice = correctedX96Price(
+            sqrtPriceX96: sqrtPriceX96,
+            tokenIn: tokenIn,
+            tokenOut: tokenOut
+        )
+
+        let swapPath = SwapPath([
+            SwapPathItem(token1: tokenIn.address, token2: weth.address, fee: bestTradeOut.fee),
+            SwapPathItem(token1: weth.address, token2: tokenOut.address, fee: bestTradeOut2.fee)
+        ])
+
+        let lower: BigInt
+        let upper: BigInt
+
+        switch tickType {
+        case .full:
+            lower = TickMath.MIN_TICK
+            upper = TickMath.MAX_TICK
+            let tickInfo = TickInfo(tickLower: lower,
+                                    tickUpper: upper,
+                                    tickLowerSqrtPriceX96: nil,
+                                    tickUpperSqrtPriceX96: nil,
+                                    tickLowerPrice: nil,
+                                    tickUpperPrice: nil,
+                                    tickcurrentPrice: slotPrice,
+                                    tickSpacing: tickSpacing,
+                                    slot0: slot0
+            )
+            let (amount0, amount1) = try calculateLiquidityAmounts(
+                tokenIn: tokenIn,
+                tokenOut: tokenOut,
+                amountIn: amountIn,
+                currentTick: currentTick,
+                tickLower: lower,
+                tickUpper: upper,
+                sqrtPriceX96: sqrtPriceX96
+            )
+            return TradeV3(tradeType: .exactIn, swapPath: swapPath, amountIn: amount0, amountOut: amount1, tokenIn: tokenIn, tokenOut: tokenOut, slotPrices: slotPrice.map { [$0] } ?? [], tickInfo: tickInfo)
+
+        case let .multi(value):
+            let multiTick = currentTick * BigInt("\(value * 100)")! / 100
+            lower = currentTick - multiTick
+            upper = currentTick + multiTick
+
+        case let .range(tickLower, tickUpper):
+            lower = tickLower != nil ? tickLower! : currentTick - BigInt(tickSpacing)
+            upper = tickUpper != nil ? tickUpper! : currentTick + BigInt(tickSpacing)
+        }
+
+        let nearestUsableLowerTick = try TickMath.nearestUsableTick(tick: lower, tickSpacing: tickSpacing)
+        let nearestUsableUpperTick = try TickMath.nearestUsableTick(tick: upper, tickSpacing: tickSpacing)
+
+        let tickLowerSqrtPriceX96 = try TickMath.getSqrtRatioAtTick(tick: nearestUsableLowerTick)
+        let tickLowerPrice = correctedX96Price(
+            sqrtPriceX96: tickLowerSqrtPriceX96,
+            tokenIn: tokenIn,
+            tokenOut: tokenOut
+        )
+
+        let tickUpperSqrtPriceX96 = try TickMath.getSqrtRatioAtTick(tick: nearestUsableUpperTick)
+        let tickUpperPrice = correctedX96Price(
+            sqrtPriceX96: tickUpperSqrtPriceX96,
+            tokenIn: tokenIn,
+            tokenOut: tokenOut
+        )
+
+        let (amount0, amount1) = try calculateLiquidityAmounts(
+            tokenIn: tokenIn,
+            tokenOut: tokenOut,
+            amountIn: amountIn,
+            currentTick: currentTick,
+            tickLower: nearestUsableLowerTick,
+            tickUpper: nearestUsableUpperTick,
+            sqrtPriceX96: sqrtPriceX96
+        )
+
+        let tickInfo = TickInfo(tickLower: nearestUsableLowerTick,
+                                tickUpper: nearestUsableUpperTick,
+                                tickLowerSqrtPriceX96: tickLowerSqrtPriceX96,
+                                tickUpperSqrtPriceX96: tickUpperSqrtPriceX96,
+                                tickLowerPrice: tickLowerPrice,
+                                tickUpperPrice: tickUpperPrice,
+                                tickcurrentPrice: slotPrice,
+                                tickSpacing: tickSpacing,
+                                slot0: slot0
+        )
+
+        return TradeV3(tradeType: .exactIn, swapPath: swapPath, amountIn: amount0, amountOut: amount1, tokenIn: tokenIn, tokenOut: tokenOut, slotPrices: slotPrice.map { [$0] } ?? [], tickInfo: tickInfo)
+    }
+
     private func calculateLiquidityAmounts(
         tokenIn: Token,
         tokenOut: Token,
@@ -390,6 +497,7 @@ extension QuoterV2 {
         case getAmount1ForLiquidityError
         case tickLowerError
         case tickUpperError
+        case invalidTokenPair
     }
 }
 
