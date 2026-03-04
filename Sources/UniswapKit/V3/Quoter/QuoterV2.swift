@@ -117,7 +117,8 @@ public class QuoterV2 {
     private func bestTradeSingleIn(rpcSource: RpcSource, chain: Chain, tokenIn: Token, tokenOut: Token, amountIn: BigUInt) async throws -> TradeV3 {
         let bestTradeOut = try await bestTradeExact(rpcSource: rpcSource, chain: chain, tradeType: .exactIn, tokenIn: tokenIn, tokenOut: tokenOut, amount: amountIn)
 
-        let pool = try await Pool(networkManager: networkManager, rpcSource: rpcSource, chain: chain, token0: tokenIn.address, token1: tokenOut.address, fee: bestTradeOut.fee, dexType: dexType)
+        let (poolToken0, poolToken1) = tokenIn.sortsBefore(token: tokenOut) ? (tokenIn.address, tokenOut.address) : (tokenOut.address, tokenIn.address)
+        let pool = try await Pool(networkManager: networkManager, rpcSource: rpcSource, chain: chain, token0: poolToken0, token1: poolToken1, fee: bestTradeOut.fee, dexType: dexType)
         let sqrtPriceX96 = try await pool.slot0().sqrtPriceX96
         let slotPrice = correctedX96Price(
             sqrtPriceX96: sqrtPriceX96,
@@ -218,7 +219,8 @@ extension QuoterV2 {
         let bestTradeOut = try await bestTradeExact(rpcSource: rpcSource, chain: chain, tradeType: .exactIn, tokenIn: tokenIn, tokenOut: tokenOut, amount: amountIn)
         let tickSpacing = KitV3.TickSpacing.tickSpacing(fee: bestTradeOut.fee).rawValue
         
-        let pool = try await Pool(networkManager: networkManager, rpcSource: rpcSource, chain: chain, token0: tokenIn.address, token1: tokenOut.address, fee: bestTradeOut.fee, dexType: dexType)
+        let (poolToken0, poolToken1) = tokenIn.sortsBefore(token: tokenOut) ? (tokenIn.address, tokenOut.address) : (tokenOut.address, tokenIn.address)
+        let pool = try await Pool(networkManager: networkManager, rpcSource: rpcSource, chain: chain, token0: poolToken0, token1: poolToken1, fee: bestTradeOut.fee, dexType: dexType)
         
         let slot0 = try await pool.slot0()
         let sqrtPriceX96 = slot0.sqrtPriceX96
@@ -322,7 +324,8 @@ extension QuoterV2 {
 
         let tickSpacing = KitV3.TickSpacing.tickSpacing(fee: bestTradeOut.fee).rawValue
 
-        let pool = try await Pool(networkManager: networkManager, rpcSource: rpcSource, chain: chain, token0: tokenIn.address, token1: tokenOut.address, fee: bestTradeOut.fee, dexType: dexType)
+        let (poolToken0, poolToken1) = tokenIn.sortsBefore(token: tokenOut) ? (tokenIn.address, tokenOut.address) : (tokenOut.address, tokenIn.address)
+        let pool = try await Pool(networkManager: networkManager, rpcSource: rpcSource, chain: chain, token0: poolToken0, token1: poolToken1, fee: bestTradeOut.fee, dexType: dexType)
 
         let slot0 = try await pool.slot0()
         let sqrtPriceX96 = slot0.sqrtPriceX96
@@ -500,4 +503,3 @@ extension QuoterV2 {
         case invalidTokenPair
     }
 }
-
