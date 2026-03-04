@@ -323,11 +323,13 @@ extension TradeManager {
                     isBothErc = false
                     value = ethAmountDesired
                 }else {
-                    let amountADesired = trade.tokenAmountIn.rawAmount
-                    let amountBDesired = trade.tokenAmountOut.rawAmount
+                    let (sortedTokenA, sortedTokenB) = tokenA.sortsBefore(token: tokenB) ? (tokenA, tokenB) : (tokenB, tokenA)
+                    let (amountADesired, amountBDesired) = tokenA.sortsBefore(token: tokenB)
+                        ? (trade.tokenAmountIn.rawAmount, trade.tokenAmountOut.rawAmount)
+                        : (trade.tokenAmountOut.rawAmount, trade.tokenAmountIn.rawAmount)
                     method = try buildMethodForAddLiquidity(
-                        tokenA: tokenA.address,
-                        tokenB: tokenB.address,
+                        tokenA: sortedTokenA.address,
+                        tokenB: sortedTokenB.address,
                         amountADesired: amountADesired,
                         amountBDesired: amountBDesired,
                         amountAMin: amountMin(rawAmount: amountADesired),
@@ -365,9 +367,13 @@ extension TradeManager {
                 )
                 isBothErc = false
             } else {
+                let (sortedTokenA, sortedTokenB) = tokenA.sortsBefore(token: tokenB) ? (tokenA, tokenB) : (tokenB, tokenA)
+                let (amountAExpected, amountBExpected) = tokenA.sortsBefore(token: tokenB)
+                    ? (trade.tokenAmountIn.rawAmount, trade.tokenAmountOut.rawAmount)
+                    : (trade.tokenAmountOut.rawAmount, trade.tokenAmountIn.rawAmount)
                 method = try buildMethodForRemoveLiquidity(
-                    tokenA: tokenA.address,
-                    tokenB: tokenB.address,
+                    tokenA: sortedTokenA.address,
+                    tokenB: sortedTokenB.address,
                     liquidity: liquidity,
                     amountAMin: amountMin(rawAmount: amountAExpected),
                     amountBMin: amountMin(rawAmount: amountBExpected),
