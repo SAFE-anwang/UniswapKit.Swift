@@ -11,17 +11,35 @@ public class TradeDataV3 {
     }
 
     var tokenAmountInMax: TokenAmount {
-        let amountInMax = ((Fraction(numerator: 1) + options.slippageFraction) * Fraction(numerator: trade.tokenAmountIn.rawAmount)).quotient
+        let rawAmount = trade.tokenAmountIn.rawAmount
+        let amountInMax: BigUInt
+        if rawAmount == 0 {
+            amountInMax = 0
+        } else {
+            amountInMax = ((Fraction(numerator: 1) + options.slippageFraction) * Fraction(numerator: rawAmount)).quotient
+        }
         return TokenAmount(token: trade.tokenAmountIn.token, rawAmount: amountInMax)
     }
     
     var tokenAmountInMin: TokenAmount {
-        let amountInMin = ((Fraction(numerator: 1) + options.slippageFraction).inverted * Fraction(numerator: trade.tokenAmountIn.rawAmount)).quotient
+        let rawAmount = trade.tokenAmountIn.rawAmount
+        let amountInMin: BigUInt
+        if rawAmount == 0 {
+            amountInMin = 0
+        } else {
+            amountInMin = ((Fraction(numerator: 1) + options.slippageFraction).inverted * Fraction(numerator: rawAmount)).quotient
+        }
         return TokenAmount(token: trade.tokenAmountIn.token, rawAmount: amountInMin)
     }
 
     var tokenAmountOutMin: TokenAmount {
-        let amountOutMin = ((Fraction(numerator: 1) + options.slippageFraction).inverted * Fraction(numerator: trade.tokenAmountOut.rawAmount)).quotient
+        let rawAmount = trade.tokenAmountOut.rawAmount
+        let amountOutMin: BigUInt
+        if rawAmount == 0 {
+            amountOutMin = 0
+        } else {
+            amountOutMin = ((Fraction(numerator: 1) + options.slippageFraction).inverted * Fraction(numerator: rawAmount)).quotient
+        }
         return TokenAmount(token: trade.tokenAmountOut.token, rawAmount: amountOutMin)
     }
 }

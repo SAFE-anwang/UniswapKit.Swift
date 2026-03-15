@@ -28,13 +28,12 @@ private extension NonfungiblePositionManager {
     
     func tokenId(rpcSource: RpcSource, chain: Chain, owner: Address, token0: Address, token1: Address, fee: BigUInt, tickLower: BigInt, tickUpper: BigInt) async throws -> BigUInt? {
         let positionInfos = try await getPositionInfos(rpcSource: rpcSource, chain: chain, owner: owner)
-        let (sortedToken0, sortedToken1) = token0.hex < token1.hex ? (token0, token1) : (token1, token0)
         let tokenId = positionInfos.first(where: {
+            $0.token0 == token0 &&
+            $0.token1 == token1 &&
             $0.fee == fee &&
             $0.tickLower == tickLower &&
-            $0.tickUpper == tickUpper &&
-            $0.token0 == sortedToken0 &&
-            $0.token1 == sortedToken1
+            $0.tickUpper == tickUpper
         })?.tokenId
         return tokenId
     }
@@ -109,28 +108,15 @@ private extension NonfungiblePositionManager {
 private extension NonfungiblePositionManager {
     
     func buildMethodForExact(tradeData: TradeDataV3, tickLower: BigInt, tickUpper: BigInt, recipient: Address, rpcSource: RpcSource, chain: Chain, deadline: BigUInt) async throws -> ContractMethod {
-        guard tickLower < tickUpper else {
-            throw PositionManagerError.invalidTickRange
-        }
-        
         let trade = tradeData.trade
         let tokentIn = trade.tokenAmountIn.token
         let tokentOut = trade.tokenAmountOut.token
         
-        guard trade.tokenAmountIn.rawAmount > 0 && trade.tokenAmountOut.rawAmount > 0 else {
-            throw PositionManagerError.invalidAmount
-        }
-        
         let (token0, token1) = tokentIn.sortsBefore(token: tokentOut) ? (tokentIn, tokentOut) : (tokentOut, tokentIn)
-        let (amount0Desired, amount1Desired) = tokentIn.sortsBefore(token: tokentOut) 
-            ? (trade.tokenAmountIn.rawAmount, trade.tokenAmountOut.rawAmount)
-            : (trade.tokenAmountOut.rawAmount, trade.tokenAmountIn.rawAmount)
+        let (amount0, amount1) = tokentIn.sortsBefore(token: tokentOut) ? (trade.tokenAmountIn.rawAmount, trade.tokenAmountOut.rawAmount) : (trade.tokenAmountOut.rawAmount ,trade.tokenAmountIn.rawAmount)
+        let (amount0Min, amount1Min) = tokentIn.sortsBefore(token: tokentOut) ? (tradeData.tokenAmountInMin.rawAmount, tradeData.tokenAmountOutMin.rawAmount) : (tradeData.tokenAmountOutMin.rawAmount, tradeData.tokenAmountInMin.rawAmount)
         
-        let (amount0Min, amount1Min) = tokentIn.sortsBefore(token: tokentOut)
-            ? (tradeData.tokenAmountInMin.rawAmount, tradeData.tokenAmountOutMin.rawAmount)
-            : (tradeData.tokenAmountOutMin.rawAmount, tradeData.tokenAmountInMin.rawAmount)
-        
-        if let tokenId = try await tokenId(rpcSource: rpcSource,
+        if  let tokenId = try await tokenId(rpcSource: rpcSource,
                                             chain: chain,
                                             owner: recipient,
                                             token0: token0.address,
@@ -140,8 +126,8 @@ private extension NonfungiblePositionManager {
                                             tickUpper: tickUpper) {
             
             let method = IncreaseLiquidityMethod(tokenId: tokenId,
-                                                 amount0Desired: amount0Desired,
-                                                 amount1Desired: amount1Desired,
+                                                 amount0Desired: amount0,
+                                                 amount1Desired: amount1,
                                                  amount0Min: amount0Min,
                                                  amount1Min: amount1Min,
                                                  deadline: deadline
@@ -149,13 +135,14 @@ private extension NonfungiblePositionManager {
            return method
             
         } else {
+            /// mint a new position
             let method = MintMethod(token0: token0.address,
                                     token1: token1.address,
                                     fee: trade.swapPath.firstFeeAmount.rawValue,
                                     tickLower: tickLower,
                                     tickUpper: tickUpper,
-                                    amount0Desired: amount0Desired,
-                                    amount1Desired: amount1Desired,
+                                    amount0Desired: amount0,
+                                    amount1Desired: amount1,
                                     amount0Min: amount0Min,
                                     amount1Min: amount1Min,
                                     recipient: recipient,
@@ -189,24 +176,25 @@ extension NonfungiblePositionManager {
         let swapMethod = try await buildMethodForExact(tradeData: tradeData, tickLower: tickLower, tickUpper: tickUpper, recipient: recipient, rpcSource: rpcSource, chain: chain, deadline: deadline)
         methods.append(swapMethod)
 
-        let ethValue: BigUInt
-        let tokenIn = tradeData.trade.tokenAmountIn.token
-        let tokenOut = tradeData.trade.tokenAmountOut.token
+        let trade = tradeData.trade
+        let tokenIn = trade.tokenAmountIn.token
+        let tokenOut = trade.tokenAmountOut.token
         
-        if tokenIn.isEther {
-            ethValue = tradeData.type == .exactOut ? tradeData.tokenAmountInMax.rawAmount : tradeData.trade.tokenAmountIn.rawAmount
-        } else if tokenOut.isEther {
-            ethValue = tradeData.type == .exactOut ? tradeData.trade.tokenAmountOut.rawAmount : tradeData.tokenAmountOutMin.rawAmount
+        let ethValue: BigUInt
+        let sortedBefore = tokenIn.sortsBefore(token: tokenOut)
+        let (token0, token1) = sortedBefore ? (tokenIn, tokenOut) : (tokenOut, tokenIn)
+        let (amount0, amount1) = sortedBefore ? (trade.tokenAmountIn.rawAmount, trade.tokenAmountOut.rawAmount) : (trade.tokenAmountOut.rawAmount, trade.tokenAmountIn.rawAmount)
+        
+        if token0.isEther {
+            ethValue = tradeData.type == .exactOut ? (sortedBefore ? tradeData.tokenAmountInMax.rawAmount : tradeData.tokenAmountOutMin.rawAmount) : amount0
+        } else if token1.isEther {
+            ethValue = tradeData.type == .exactOut ? (sortedBefore ? tradeData.tokenAmountOutMin.rawAmount : tradeData.tokenAmountInMax.rawAmount) : amount1
         } else {
             ethValue = 0
         }
         
-        if tokenIn.isEther, tradeData.type == .exactOut {
+        if tradeData.type == .exactOut, (token0.isEther || token1.isEther) {
             methods.append(RefundEthMethod())
-        }
-        
-        if tokenOut.isEther {
-            methods.append(UnwrapWeth9Method(amountMinimum: tradeData.tokenAmountOutMin.rawAmount, recipient: recipient))
         }
 
         let resultMethod = (methods.count > 1) ? MulticallMethod(methods: methods) : methods[0]
@@ -302,8 +290,6 @@ extension NonfungiblePositionManager {
         case positionIdDataError
         case createAndInitializePoolError
         case amountsForLiquidityError
-        case invalidTickRange
-        case invalidAmount
     }
 
     struct UInt128 {

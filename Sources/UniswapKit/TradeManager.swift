@@ -274,6 +274,8 @@ extension TradeManager {
 
         let tokenA = trade.tokenAmountIn.token
         let tokenB = trade.tokenAmountOut.token
+        let amountOutByMidPrice = (trade.route.midPrice.fraction * Fraction(numerator: trade.tokenAmountIn.rawAmount)).quotient
+        let amountOutDesired = amountOutByMidPrice > 0 ? amountOutByMidPrice : trade.tokenAmountOut.rawAmount
 
         let to = tradeData.options.recipient ?? recipient
         let deadline = BigUInt(Date().timeIntervalSince1970 + tradeData.options.ttl)
@@ -297,7 +299,7 @@ extension TradeManager {
             switch tokenA {
             case .eth:
                 let ethAmountDesired = trade.tokenAmountIn.rawAmount
-                let tokenAmountDesired = trade.tokenAmountOut.rawAmount
+                let tokenAmountDesired = amountOutDesired
                 method = try buildMethodForEthAddLiquidity(
                     token: tokenB,
                     amountDesired: tokenAmountDesired,
@@ -311,7 +313,7 @@ extension TradeManager {
             case .erc20:
                 if case .eth = tokenB {
                     let tokenAmountDesired = trade.tokenAmountIn.rawAmount
-                    let ethAmountDesired = trade.tokenAmountOut.rawAmount
+                    let ethAmountDesired = amountOutDesired
                     method = try buildMethodForEthAddLiquidity(
                         token: tokenA,
                         amountDesired: tokenAmountDesired,
@@ -323,13 +325,11 @@ extension TradeManager {
                     isBothErc = false
                     value = ethAmountDesired
                 }else {
-                    let (sortedTokenA, sortedTokenB) = tokenA.sortsBefore(token: tokenB) ? (tokenA, tokenB) : (tokenB, tokenA)
-                    let (amountADesired, amountBDesired) = tokenA.sortsBefore(token: tokenB)
-                        ? (trade.tokenAmountIn.rawAmount, trade.tokenAmountOut.rawAmount)
-                        : (trade.tokenAmountOut.rawAmount, trade.tokenAmountIn.rawAmount)
+                    let amountADesired = trade.tokenAmountIn.rawAmount
+                    let amountBDesired = amountOutDesired
                     method = try buildMethodForAddLiquidity(
-                        tokenA: sortedTokenA.address,
-                        tokenB: sortedTokenB.address,
+                        tokenA: tokenA.address,
+                        tokenB: tokenB.address,
                         amountADesired: amountADesired,
                         amountBDesired: amountBDesired,
                         amountAMin: amountMin(rawAmount: amountADesired),
@@ -367,13 +367,9 @@ extension TradeManager {
                 )
                 isBothErc = false
             } else {
-                let (sortedTokenA, sortedTokenB) = tokenA.sortsBefore(token: tokenB) ? (tokenA, tokenB) : (tokenB, tokenA)
-                let (amountAExpected, amountBExpected) = tokenA.sortsBefore(token: tokenB)
-                    ? (trade.tokenAmountIn.rawAmount, trade.tokenAmountOut.rawAmount)
-                    : (trade.tokenAmountOut.rawAmount, trade.tokenAmountIn.rawAmount)
                 method = try buildMethodForRemoveLiquidity(
-                    tokenA: sortedTokenA.address,
-                    tokenB: sortedTokenB.address,
+                    tokenA: tokenA.address,
+                    tokenB: tokenB.address,
                     liquidity: liquidity,
                     amountAMin: amountMin(rawAmount: amountAExpected),
                     amountBMin: amountMin(rawAmount: amountBExpected),
