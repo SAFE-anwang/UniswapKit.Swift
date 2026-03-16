@@ -27,7 +27,12 @@ public class TradeV3 {
 public extension TradeV3 {
     var priceImpact: Decimal? {
         let decimals = tokenAmountIn.token.decimals - tokenAmountOut.token.decimals
-        let tradePrice = PriceImpactHelper.price(in: tokenAmountIn.rawAmount, out: tokenAmountOut.rawAmount, shift: decimals)
+        var tradePrice = PriceImpactHelper.price(in: tokenAmountIn.rawAmount, out: tokenAmountOut.rawAmount, shift: decimals)
+
+        let reverted = tokenAmountIn.token.address.hex >= tokenAmountOut.token.address.hex
+        if reverted, let tp = tradePrice {
+            tradePrice = 1 / tp
+        }
 
         var slotPrice: Decimal?
         if !slotPrices.isEmpty {

@@ -53,6 +53,25 @@ public class TickMath {
         }
         return BigInt(intValue)
     }
+    
+    static func getTickAtPrice(price: Decimal) throws -> BigInt {
+        guard price > 0 else {
+            throw NSError(domain: "Price must be positive", code: 0, userInfo: nil)
+        }
+        
+        let base: Decimal = 1.0001
+        
+        guard let logValue = price.logarithm(base: base).floor() else {
+            throw NSError(domain: "floor failed", code: 0, userInfo: nil)
+        }
+        
+        let intValue = NSDecimalNumber(decimal: logValue).intValue
+        
+        guard intValue >= MIN_TICK, intValue <= MAX_TICK else {
+            throw NSError(domain: "Tick out of bounds", code: 0, userInfo: nil)
+        }
+        return BigInt(intValue)
+    }
         
     static func encodeSqrtRatioX96(amount1: BigUInt, amount0: BigUInt) -> BigUInt? {
         let numerator = amount1 << 192
@@ -72,17 +91,28 @@ public class TickMath {
         guard tick >= MIN_TICK, tick <= MAX_TICK else {
             throw NSError(domain: "Tick out of bounds", code: 0, userInfo: nil)
         }
-        let rounded = tick / BigInt(tickSpacing) * BigInt(tickSpacing)
         
-        if (rounded < MIN_TICK) {
-            return rounded + BigInt(tickSpacing)
-            
-        } else if (rounded > MAX_TICK) {
-            return rounded - BigInt(tickSpacing)
-            
+        let rounded = floorDivide(tick, BigInt(tickSpacing)) * BigInt(tickSpacing)
+        
+        if rounded < MIN_TICK {
+            return MIN_TICK
+        } else if rounded > MAX_TICK {
+            return MAX_TICK
         } else {
             return rounded
         }
+    }
+    
+    private static func floorDivide(_ a: BigInt, _ b: BigInt) -> BigInt {
+        if a >= 0 {
+            return a / b
+        }
+        let quotient = a / b
+        let remainder = a % b
+        if remainder == 0 {
+            return quotient
+        }
+        return quotient - 1
     }
 }
 
@@ -99,6 +129,13 @@ extension Decimal {
         let doubleValue = nsDecimal.doubleValue
         let ceilValue = Darwin.ceil(doubleValue)
         return Decimal(string: ceilValue.description)
+    }
+    
+    func floor() -> Decimal? {
+        let nsDecimal = NSDecimalNumber(decimal: self)
+        let doubleValue = nsDecimal.doubleValue
+        let floorValue = Darwin.floor(doubleValue)
+        return Decimal(string: floorValue.description)
     }
     
     func toBigUInt() -> BigUInt? {

@@ -267,7 +267,7 @@ extension QuoterV2 {
         let nearestUsableUpperTick = try TickMath.nearestUsableTick(tick: upper, tickSpacing: tickSpacing)
         
         let sortedBefore = tokenIn.sortsBefore(token: tokenOut)
-        let (tick0, tick1) = sortedBefore ? (nearestUsableLowerTick, nearestUsableUpperTick) : (nearestUsableUpperTick, nearestUsableLowerTick)
+        let (tick0,tick1) = nearestUsableLowerTick < nearestUsableUpperTick ? (nearestUsableLowerTick,nearestUsableUpperTick) : (nearestUsableUpperTick,nearestUsableLowerTick)
         
         let tickLowerSqrtPriceX96 = try TickMath.getSqrtRatioAtTick(tick: tick0)
         let tickLowerPrice = correctedX96Price(
