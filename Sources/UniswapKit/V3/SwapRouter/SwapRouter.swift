@@ -89,6 +89,6 @@ extension SwapRouter {
 
         let resultMethod = (methods.count > 1) ? MulticallMethod(methods: methods) : swapMethod
 
-        return TransactionData(to: dexType.routerAddress(chain: chain), value: ethValue, input: resultMethod.encodedABI_fix())
+        return TransactionData(to: dexType.routerAddress(chain: chain), value: ethValue, input: resultMethod.encodedABI())
     }
 }

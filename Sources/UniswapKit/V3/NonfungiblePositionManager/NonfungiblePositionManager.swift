@@ -199,7 +199,7 @@ extension NonfungiblePositionManager {
 
         let resultMethod = (methods.count > 1) ? MulticallMethod(methods: methods) : methods[0]
         let contractAddress = dexType.nonfungiblePositionAddress(chain: chain)
-        return TransactionData(to: contractAddress, value: ethValue, input: resultMethod.encodedABI_fix())
+        return TransactionData(to: contractAddress, value: ethValue, input: resultMethod.encodedABI())
     }
     
     func removeLiquidityTransactionData(
@@ -244,7 +244,7 @@ extension NonfungiblePositionManager {
         
         let resultMethod =  (methods.count > 1) ? MulticallMethod(methods: methods) : decreaseMethod
         let contractAddress = dexType.nonfungiblePositionAddress(chain: chain)
-        return TransactionData(to: contractAddress, value: 0, input: resultMethod.encodedABI_fix())
+        return TransactionData(to: contractAddress, value: 0, input: resultMethod.encodedABI())
     }
 }
 extension NonfungiblePositionManager {
