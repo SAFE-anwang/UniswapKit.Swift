@@ -28,3 +28,6 @@ class PermitMethod: ContractMethod {
         [spender, tokenId, deadline, v, r, s]
     }
 }
+public struct Data32 {
+    let data: Data
+}
