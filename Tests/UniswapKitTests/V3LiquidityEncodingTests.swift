@@ -25,17 +25,17 @@ final class V3LiquidityEncodingTests: XCTestCase {
         )
 
         let multicall = MulticallMethod(methods: [mint])
-        let encoded = multicall.encodedABI_fix()
-        XCTAssertEqual(encoded.prefix(4), ContractMethodHelper_fix.methodId(signature: MulticallMethod.methodSignature))
+        let encoded = multicall.encodedABI()
+        XCTAssertEqual(encoded.prefix(4), ContractMethodHelper.methodId(signature: MulticallMethod.methodSignature))
         XCTAssertEqual((encoded.count - 4) % 32, 0)
 
-        let decoded = ContractMethodHelper_fix.decodeABI(
+        let decoded = ContractMethodHelper.decodeABI(
             inputArguments: Data(encoded.dropFirst(4)),
-            argumentTypes: [ContractMethodHelper_fix.MulticallParameters.self]
+            argumentTypes: [ContractMethodHelper.MulticallParameters.self]
         )
         let methodArray = try XCTUnwrap(decoded.first as? [Data])
         XCTAssertEqual(methodArray.count, 1)
-        XCTAssertEqual(methodArray[0], mint.encodedABI_fix())
+        XCTAssertEqual(methodArray[0], mint.encodedABI())
     }
 }
 

@@ -38,10 +38,3 @@ class MintMethod: ContractMethod {
     }
     
 }
-
-extension ContractMethod {
-    
-    func encodedABI_fix() -> Data {
-        ContractMethodHelper_fix.encodedABI(methodId: methodId, arguments: arguments)
-    }
-}

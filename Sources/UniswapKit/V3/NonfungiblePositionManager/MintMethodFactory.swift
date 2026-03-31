@@ -6,8 +6,9 @@ class MintMethodFactory: IContractMethodFactory {
     let methodId: Data = ContractMethodHelper.methodId(signature: MintMethod.methodSignature)
 
     func createMethod(inputArguments: Data) throws -> ContractMethod {
-        let parsedArguments = ContractMethodHelper_fix.decodeABI(inputArguments: inputArguments, argumentTypes: [Address.self, Address.self, BigUInt.self, BigInt.self, BigInt.self, BigUInt.self, BigUInt.self, BigUInt.self, BigUInt.self, Address.self, BigUInt.self])
-        guard let token0 = parsedArguments[0] as? Address,
+        let parsedArguments = ContractMethodHelper.decodeABI(inputArguments: inputArguments, argumentTypes: [Address.self, Address.self, BigUInt.self, BigInt.self, BigInt.self, BigUInt.self, BigUInt.self, BigUInt.self, BigUInt.self, Address.self, BigUInt.self])
+        guard parsedArguments.count >= 11,
+              let token0 = parsedArguments[0] as? Address,
               let token1 = parsedArguments[1] as? Address,
               let fee = parsedArguments[2] as? BigUInt,
               let tickLower = parsedArguments[3] as? BigInt,
