@@ -28,6 +28,7 @@ extension TokenFactory {
         case .SafeFour: wethAddressHex = SafeSwapConfig.wethAddressHex
         case .SafeFourTestNet: wethAddressHex = SafeSwapConfig.wethAddressHex
         case .zkSync: wethAddressHex = "0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91"
+        case .robinhood: wethAddressHex = "0x0bd7d308f8e1639fab988df18a8011f41eacad73"
         default: throw UnsupportedChainError.noWethAddress
         }
 
