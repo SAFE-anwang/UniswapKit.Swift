@@ -20,8 +20,8 @@ public class KitV3 {
 }
 
 public extension KitV3 {
-    func routerAddress(chain: Chain) -> Address {
-        dexType.routerAddress(chain: chain)
+    func routerAddress(chain: Chain) throws -> Address {
+        try dexType.routerAddress(chain: chain)
     }
     
     func nonfungiblePositionAddress(chain: Chain) -> Address {
@@ -55,7 +55,7 @@ public extension KitV3 {
     }
 
     func transactionData(receiveAddress: Address, chain: Chain, bestTrade: TradeDataV3, tradeOptions: TradeOptions) throws -> TransactionData {
-        swapRouter.transactionData(receiveAddress: receiveAddress, chain: chain, tradeData: bestTrade, tradeOptions: tradeOptions)
+        try swapRouter.transactionData(receiveAddress: receiveAddress, chain: chain, tradeData: bestTrade, tradeOptions: tradeOptions)
     }
 }
 
